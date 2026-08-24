@@ -176,4 +176,4 @@ Escanea el QR con la app Expo Go.
 |---|---|
 | Gabriel Armando González Sosa | *(pendiente)* |
 | Daniel Felipe Forero Sánchez | *(pendiente)* |
-| Integrante 3 | *(pendiente)* |
+| Laura Sofía Rodriguez Gonzalez| *(pendiente)* |
