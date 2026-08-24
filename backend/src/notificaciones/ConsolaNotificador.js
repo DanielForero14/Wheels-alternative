@@ -9,3 +9,4 @@ class ConsolaNotificador extends INotificador {
 }
 
 module.exports = ConsolaNotificador;
+s
