@@ -174,6 +174,6 @@ Escanea el QR con la app Expo Go.
 
 | Integrante | Rol / contribución |
 |---|---|
-| Gabriel Armando González Sosa | *(pendiente)* |
-| Daniel Felipe Forero Sánchez | *(pendiente)* |
-| Laura Sofía Rodriguez Gonzalez| *(pendiente)* |
+| Gabriel Armando González Sosa | Diseño UML (diagrama de clases) y desarrollo de la app móvil (Expo/React Native)s |
+| Daniel Felipe Forero Sánchez | Implementación del backend (Express), aplicación de patrones de diseño (Factory Method, Observer) y principios SOLID |
+| Laura Sofía Rodriguez Gonzalez| Documentación del Wiki |
