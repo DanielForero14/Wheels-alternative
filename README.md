@@ -177,3 +177,12 @@ Escanea el QR con la app Expo Go.
 | Gabriel Armando González Sosa | Diseño UML (diagrama de clases) y desarrollo de la app móvil (Expo/React Native)s |
 | Daniel Felipe Forero Sánchez | Implementación del backend (Express), aplicación de patrones de diseño (Factory Method, Observer) y principios SOLID |
 | Laura Sofía Rodriguez Gonzalez| Documentación del Wiki |
+
+---
+
+## 🎥 Recurso visual
+
+Como complemento a la presentación del proyecto **WHEELS – Transporte Universitario**, se desarrolló un recurso audiovisual que presenta de manera dinámica la idea principal, la problemática abordada y la propuesta de solución planteada por el equipo.
+
+🔗 **Video del proyecto:**  
+[Ver recurso visual en YouTube](https://youtu.be/TLvPFDe2oxc?si=LcL8ibK0JN8Hz2iA)
