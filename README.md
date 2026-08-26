@@ -40,7 +40,7 @@ calificación de usuarios.
 | Mantenibilidad | `INotificador` aísla a `GestorViajes` del mecanismo de notificación (email, push). Agregar un canal nuevo (ej. SMS) no requiere tocar `GestorViajes`, solo crear una clase que implemente `INotificador` | Una capa extra de indirección: para entender qué notificación llega realmente hay que seguir la cadena `GestorViajes → INotificador → implementación concreta` |
 | Extensibilidad | Nuevos tipos de viaje o reglas de negocio se pueden agregar en `ViajeFactory` sin modificar el código que ya crea viajes, siempre que se mantenga el mismo contrato | La validación de datos vive centralizada en la fábrica; si en el futuro cada tipo de viaje necesita validaciones distintas, la fábrica tendría que crecer con condicionales o dividirse en varias fábricas |
 
-> Nota de honestidad técnica: no afirmamos que `INotificador` sea "reutilizable en otros proyectos" — no hay evidencia de eso. Lo que sí está demostrado con el código y las pruebas de ejecución es que es **extensible dentro de este sistema**: se agregaron dos notificadores (`ConsolaNotificador` y `AppNotificador`) sin modificar `GestorViajes`.
+
 
 ## 4. Diseño de Software
 
@@ -181,7 +181,5 @@ Escanea el QR con la app Expo Go.
 
 ---
 
-## 🎥 Recurso visual
 
-Como complemento a la presentación del proyecto **WHEELS – Transporte Universitario**, se desarrolló un recurso audiovisual que presenta de manera dinámica la idea principal, la problemática abordada y la propuesta de solución planteada por el equipo.
 
