@@ -30,7 +30,8 @@ calificación de usuarios.
 
 ## 2. Creatividad en la Presentación
 
-🎥 `[pendiente – enlace al video/recurso creativo]`
+🔗 **Video del proyecto:**  
+[Ver recurso visual en YouTube](https://youtu.be/TLvPFDe2oxc?si=LcL8ibK0JN8Hz2iA)
 
 ## 3. Fundamentos de Ingeniería de Software
 
@@ -184,5 +185,3 @@ Escanea el QR con la app Expo Go.
 
 Como complemento a la presentación del proyecto **WHEELS – Transporte Universitario**, se desarrolló un recurso audiovisual que presenta de manera dinámica la idea principal, la problemática abordada y la propuesta de solución planteada por el equipo.
 
-🔗 **Video del proyecto:**  
-[Ver recurso visual en YouTube](https://youtu.be/TLvPFDe2oxc?si=LcL8ibK0JN8Hz2iA)
