@@ -31,7 +31,7 @@ calificación de usuarios.
 ## 2. Creatividad en la Presentación
 
 🔗 **Video del proyecto:**  
-[Ver recurso visual en YouTube](https://youtu.be/TLvPFDe2oxc?si=LcL8ibK0JN8Hz2iA)
+[Ver recurso visual en YouTube](https://youtu.be/U8I9j75vfkc)
 
 ## 3. Fundamentos de Ingeniería de Software
 
