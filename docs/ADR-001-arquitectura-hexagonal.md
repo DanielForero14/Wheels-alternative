@@ -1,8 +1,5 @@
 # ADR-001: Usar arquitectura hexagonal (puertos y adaptadores) en el backend
 
-- **Estado:** Aceptada
-- **Fecha:** septiembre de 2026
-- **Autores:** equipo WHEELS
 
 ## Contexto
 
@@ -19,22 +16,22 @@ También hay que tener en cuenta el tamaño real del proyecto: es un solo backen
 ## Opciones consideradas
 
 ### Opción 1: Arquitectura en capas (presentación → negocio → datos)
-- ✅ Es la más conocida y la más fácil de entender.
-- ✅ Buen rendimiento: las llamadas van directo de una capa a la otra.
-- ❌ La capa de negocio depende de la capa de datos. Cambiar de memoria a SQLite, o cambiar la librería de QR, obliga a modificar el negocio.
-- ❌ Para probar el negocio hay que simular la capa de datos completa.
+-  Es la más conocida y la más fácil de entender.
+-  Buen rendimiento: las llamadas van directo de una capa a la otra.
+-  La capa de negocio depende de la capa de datos. Cambiar de memoria a SQLite, o cambiar la librería de QR, obliga a modificar el negocio.
+-  Para probar el negocio hay que simular la capa de datos completa.
 
 ### Opción 2: Arquitectura hexagonal (puertos y adaptadores)
-- ✅ El negocio queda en el centro y solo conoce interfaces (puertos). La BD, el QR y los canales son adaptadores intercambiables.
-- ✅ Ya teníamos un puerto en el Corte 1: `INotificador`. El estilo continúa lo que ya hicimos en lugar de empezar de cero.
-- ✅ Se puede probar el negocio con dobles de prueba (mocks) sin BD ni red.
-- ❌ Hay más archivos e interfaces que en capas.
+-  El negocio queda en el centro y solo conoce interfaces (puertos). La BD, el QR y los canales son adaptadores intercambiables.
+-  Ya teníamos un puerto en el Corte 1: `INotificador`. El estilo continúa lo que ya hicimos en lugar de empezar de cero.
+-  Se puede probar el negocio con dobles de prueba (mocks) sin BD ni red.
+-  Hay más archivos e interfaces que en capas.
 
 ### Opción 3: Microservicios (viajes, autenticación y emergencias por separado)
-- ✅ Si se cae un servicio, los demás siguen funcionando.
-- ❌ Agrega llamadas de red entre servicios (más latencia y más puntos de falla).
-- ❌ Obliga a desplegar, configurar y monitorear varios servicios.
-- ❌ Es desproporcionado para un backend pequeño con un equipo de tres personas. Ningún reto exige escalar partes del sistema por separado.
+-  Si se cae un servicio, los demás siguen funcionando.
+-  Agrega llamadas de red entre servicios (más latencia y más puntos de falla).
+-  Obliga a desplegar, configurar y monitorear varios servicios.
+-  Es desproporcionado para un backend pequeño con un equipo de tres personas. Ningún reto exige escalar partes del sistema por separado.
 
 La comparación con puntajes está en [arquitectura.md, sección 3](../arquitectura.md#3-comparación-de-estilos-y-decisión).
 
