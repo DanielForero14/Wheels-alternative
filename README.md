@@ -171,7 +171,28 @@ Escanea el QR con la app Expo Go.
 - **Bajo acoplamiento:** comprobado en que `GestorViajes` puede probarse con un `INotificador` de prueba (mock) sin necesidad de un servicio real de correo o push — se verificó en las pruebas manuales con `ConsolaNotificador` y `AppNotificador` corriendo en paralelo sin conflicto.
 - **Límite honesto del diseño:** el sistema actual no persiste datos (se pierden al reiniciar el servidor) ni valida duplicados de reserva por el mismo usuario; agregar eso requeriría un patrón Repository y un modelo de usuario, fuera del alcance de este corte.
 
-## 7. Créditos y Roles
+## 7. Corte 2 – Avance
+
+> En este corte evolucionamos el sistema para responder a tres retos: **autenticación con QR**, **contacto de emergencia** y **planeación de viajes**. Este avance cubre el análisis de los retos y la selección del estilo arquitectónico. La implementación y las pruebas vienen en la entrega final.
+
+**Estilo elegido:** arquitectura **hexagonal (puertos y adaptadores)**, comparada contra arquitectura en capas y microservicios.
+
+**Documentación:**
+- [Documento de arquitectura](docs/arquitectura.md): retos, comparación de estilos y diagramas.
+- [ADR-001: arquitectura hexagonal](docs/adr/ADR-001-arquitectura-hexagonal.md)
+- [Diagramas](docs/diagramas/): contexto, contenedores y componentes (C4) y arquitectura inicial del Corte 1.
+
+### Tabla de trazabilidad (borrador)
+
+Los tres retos exigen **funcionalidad nueva**, lo cual el enunciado permite cuando el reto lo pide. Las columnas *Dónde está*, *Prueba* y *Resultado* son la meta planeada; se confirman cuando el código esté implementado.
+
+| Reto | Atributo de calidad | Decisión arquitectónica | Dónde está (planeado) | Prueba que lo evidencia (planeada) | Resultado |
+|---|---|---|---|---|---|
+| **Autenticación QR:** solo quien reservó puede abordar; el código no se falsifica ni se reutiliza | Seguridad / mantenibilidad | Puerto IGeneradorCodigo con un adaptador GeneradorQR; la regla de validación vive en el caso de uso ServicioReservas | `backend/src/puertos/IGeneradorCodigo.js`, `backend/src/adaptadores/salida/qr/`, `backend/src/aplicacion/ServicioReservas.js` | Unitarias: código válido, vencido, alterado y ya usado. Integración: reservar y validar el QR por HTTP | Pendiente |
+| **Contacto de emergencia:** la alerta llega al contacto aunque falle un canal | Disponibilidad / extensibilidad | Nuevo adaptador EmergenciaNotificador sobre el puerto INotificador (Observer del Corte 1); si un canal falla se intenta el siguiente | `backend/src/puertos/INotificador.js`, `backend/src/adaptadores/salida/notificaciones/`, `backend/src/aplicacion/ServicioEmergencia.js` | Unitaria con un notificador de prueba que falla. Carga: muchas alertas al mismo tiempo | Pendiente |
+| **Planeación de viajes:** programar viajes a futuro, que no se pierdan y buscarlos rápido | Rendimiento / mantenibilidad | Puerto IRepositorioViajes con adaptadores RepositorioSQLite y RepositorioMemoria; búsqueda por fecha, origen y destino | `backend/src/puertos/IRepositorioViajes.js`, `backend/src/adaptadores/salida/persistencia/` | Integración con SQLite en memoria. Carga con k6 sobre la búsqueda (SLO por definir antes de ejecutar) | Pendiente |
+
+## 8. Créditos y Roles
 
 | Integrante | Rol / contribución |
 |---|---|
