@@ -1,16 +1,26 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "wheels-backend",
+  "version": "2.0.0",
+  "description": "Backend de WHEELS con arquitectura hexagonal (Corte 2)",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "start:falla-sms": "node src/server.js --falla-sms",
+    "start:carga": "node src/server.js --carga",
+    "start:carga-sin-cache": "node src/server.js --carga --sin-cache",
+    "test": "node --test",
+    "test:unitarias": "node --test --test-name-pattern=Unitaria",
+    "test:integracion": "node --test --test-name-pattern=Integracion",
+    "test:cobertura": "node --test --experimental-test-coverage"
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=20"
+  },
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "sql.js": "^1.13.0"
   }
 }
