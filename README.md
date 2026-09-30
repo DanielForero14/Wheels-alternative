@@ -186,5 +186,5 @@ Los tres retos exigen **funcionalidad nueva**, lo cual el enunciado permite cuan
 | Integrante | Rol / contribución |
 |---|---|
 | Gabriel Armando González Sosa | Diseño UML y desarrollo de la app móvil (Expo/React Native) |
-| Daniel Felipe Forero Sánchez | Implementación del backend (Express), patrones de diseño y principios SOLID |
-| Laura Sofía Rodriguez Gonzalez | Documentación |
+| Laura Sofía Rodriguez Gonzalez | Implementación del backend (Express), patrones de diseño y principios SOLID |
+| Daniel Felipe Forero Sánchez | Documentación |
