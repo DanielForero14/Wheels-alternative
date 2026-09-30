@@ -102,25 +102,29 @@ Todas las pruebas se ejecutan con un solo comando (`npm test`) y tardan menos de
 
 ### Cobertura del núcleo
 
-Resultado de `npm run test:cobertura` (cobertura del proyecto completo: 97.73 % de líneas y 97.28 % de ramas).
+Resultado de `npm run test:cobertura` con la versión final (148 pruebas): cobertura del proyecto completo de **97.04 % de líneas y 96.28 % de ramas**.
 
 | Archivo | % líneas | % ramas | % funciones |
 |---|---|---|---|
 | `dominio/Usuario.js` | 100 | 91.67 | 100 |
 | `dominio/CodigoVerificacion.js` | 100 | 100 | 100 |
+| `dominio/Vehiculo.js` | 100 | 92.86 | 100 |
 | `dominio/Viaje.js` | 100 | 100 | 100 |
 | `dominio/ViajeFactory.js` | 100 | 100 | 100 |
-| `dominio/Reserva.js` | 100 | 100 | 100 |
+| `dominio/Reserva.js` | 93.85 | 86.36 | 100 |
 | `dominio/ContactoEmergencia.js` | 100 | 100 | 100 |
 | `aplicacion/ServicioUsuarios.js` | 100 | 92.31 | 100 |
-| `aplicacion/ServicioViajes.js` | 100 | 100 | 100 |
-| `aplicacion/ServicioReservas.js` | 97.37 | 95.00 | 100 |
-| `aplicacion/ServicioEmergencia.js` | 96.23 | 93.33 | 100 |
+| `aplicacion/ServicioViajes.js` | 100 | 92.86 | 100 |
+| `aplicacion/ServicioReservas.js` | 96.52 | 88.57 | 100 |
+| `aplicacion/ServicioEmergencia.js` | 96.55 | 90.00 | 100 |
+| `aplicacion/ServicioTiempoEstimado.js` | 100 | 100 | 81.82 |
 
 **Qué no está cubierto y por qué:**
-- `ServicioReservas.js` y `ServicioEmergencia.js`: falta el caso en que se reserva o se activa una alerta con un viaje que no existe. Es un caso de error sencillo que queda pendiente de agregar.
+- `Reserva.js`: faltan dos casos de error de la propia clase: crear una reserva con un estado que no existe y aceptar directamente una solicitud que ya fue respondida (este último sí se prueba desde `ServicioReservas`).
+- `ServicioReservas.js` y `ServicioEmergencia.js`: falta el caso en que se usa un viaje o una solicitud que no existe. Son casos de error sencillos que quedan pendientes de agregar.
 - `puertos/`: aparecen con cobertura baja porque son interfaces. Sus métodos solo lanzan "no implementado" y nunca se llaman directamente; lo que se prueba son los adaptadores que los implementan.
-- `datosDePrueba.js`: solo se usa al arrancar la API para las pruebas de carga (`npm run start:carga`), no en las pruebas unitarias ni de integración.
+- `RutasOpenStreetMap.js`: en las pruebas no se usa internet, así que el servicio real de mapas se reemplaza por el cálculo estimado.
+- `datosDePrueba.js` y `RutasSimuladasLentas.js`: solo se usan al arrancar la API para las pruebas de carga (`npm run start:carga`), no en las pruebas unitarias ni de integración.
 
 ### Carga
 
