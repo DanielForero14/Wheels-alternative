@@ -1,12 +1,13 @@
 // components/wheels/MisViajesConductor.tsx
-// Conductor: programar un viaje con anticipación y ver o cancelar los suyos (Reto 3).
+// Conductor: registrar su vehículo, programar un viaje con anticipación y ver o cancelar los suyos (Reto 3).
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colores } from '@/constants/colores';
-import { cancelarViaje, programarViaje, Viaje, viajesDelConductor } from '@/servicios/api';
+import { cancelarViaje, obtenerVehiculo, programarViaje, Vehiculo, Viaje, viajesDelConductor } from '@/servicios/api';
 import { fechaEnDias } from '@/servicios/fechas';
 import { useSesion } from '@/servicios/sesion';
+import MiVehiculo from './MiVehiculo';
 import { SelectorFecha, SelectorHora } from './SelectorFechaHora';
 import TarjetaViaje from './TarjetaViaje';
 import { Aviso, Boton, Campo, Encabezado, Pantalla, Seccion, TextoSuave } from './ui';
@@ -21,12 +22,16 @@ export default function MisViajesConductor() {
   const [cupos, setCupos] = useState(3);
   const [descripcionRuta, setDescripcionRuta] = useState('');
   const [viajes, setViajes] = useState<Viaje[]>([]);
+  const [vehiculo, setVehiculo] = useState<Vehiculo | null>(null);
+  const [vehiculoCargado, setVehiculoCargado] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
       setViajes(await viajesDelConductor(usuario!.correo));
+      setVehiculo(await obtenerVehiculo(usuario!.correo));
+      setVehiculoCargado(true);
     } catch (e) {
       setAviso({ tipo: 'error', texto: (e as Error).message });
     }
@@ -79,7 +84,18 @@ export default function MisViajesConductor() {
 
       {aviso ? <Aviso tipo={aviso.tipo} texto={aviso.texto} /> : null}
 
-      {!formularioAbierto ? (
+      {vehiculoCargado ? (
+        <MiVehiculo
+          correo={usuario!.correo}
+          vehiculo={vehiculo}
+          onGuardado={nuevo => {
+            setVehiculo(nuevo);
+            setAviso({ tipo: 'exito', texto: 'Vehículo guardado.' });
+          }}
+        />
+      ) : null}
+
+      {!vehiculo ? null : !formularioAbierto ? (
         <Boton
           texto="Programar viaje"
           onPress={() => {

@@ -9,6 +9,7 @@ class RepositorioMemoria extends IRepositorioViajes {
         this.viajes = [];
         this.reservas = [];
         this.contactos = [];
+        this.vehiculos = [];
         this.usuarios = [];
         this.codigos = [];
         this.siguienteId = 1;
@@ -79,6 +80,16 @@ class RepositorioMemoria extends IRepositorioViajes {
 
     buscarContacto(usuarioId) {
         return this.contactos.find(c => c.usuarioId === usuarioId) || null;
+    }
+
+    guardarVehiculo(vehiculo) {
+        this.vehiculos = this.vehiculos.filter(v => v.conductorId !== vehiculo.conductorId);
+        this.vehiculos.push(vehiculo);
+        return vehiculo;
+    }
+
+    buscarVehiculo(conductorId) {
+        return this.vehiculos.find(v => v.conductorId === conductorId) || null;
     }
 
     guardarUsuario(usuario) {

@@ -11,6 +11,7 @@ const Viaje = require('../../../dominio/Viaje');
 const Reserva = require('../../../dominio/Reserva');
 const ContactoEmergencia = require('../../../dominio/ContactoEmergencia');
 const Usuario = require('../../../dominio/Usuario');
+const Vehiculo = require('../../../dominio/Vehiculo');
 const CodigoVerificacion = require('../../../dominio/CodigoVerificacion');
 
 const TABLAS = `
@@ -27,6 +28,9 @@ const TABLAS = `
     );
     CREATE TABLE IF NOT EXISTS contactos (
         usuarioId TEXT PRIMARY KEY, nombre TEXT, telefono TEXT
+    );
+    CREATE TABLE IF NOT EXISTS vehiculos (
+        conductorId TEXT PRIMARY KEY, placa TEXT, descripcion TEXT
     );
     CREATE TABLE IF NOT EXISTS usuarios (
         correo TEXT PRIMARY KEY, nombre TEXT, rol TEXT, verificado INTEGER
@@ -152,6 +156,20 @@ class RepositorioSQLite extends IRepositorioViajes {
         if (!filas.length) return null;
         const f = filas[0];
         return new ContactoEmergencia(f.usuarioId, f.nombre, f.telefono);
+    }
+
+    // ---------- Vehículos ----------
+    guardarVehiculo(vehiculo) {
+        this._ejecutar('INSERT OR REPLACE INTO vehiculos (conductorId, placa, descripcion) VALUES (?, ?, ?)',
+            [vehiculo.conductorId, vehiculo.placa, vehiculo.descripcion]);
+        return vehiculo;
+    }
+
+    buscarVehiculo(conductorId) {
+        const filas = this._consultar('SELECT * FROM vehiculos WHERE conductorId = ?', [conductorId]);
+        if (!filas.length) return null;
+        const f = filas[0];
+        return new Vehiculo(f.conductorId, f.placa, f.descripcion);
     }
 
     // ---------- Usuarios y códigos de verificación ----------

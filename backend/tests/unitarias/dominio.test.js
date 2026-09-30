@@ -8,6 +8,7 @@ const Reserva = require('../../src/dominio/Reserva');
 const ContactoEmergencia = require('../../src/dominio/ContactoEmergencia');
 const Usuario = require('../../src/dominio/Usuario');
 const CodigoVerificacion = require('../../src/dominio/CodigoVerificacion');
+const Vehiculo = require('../../src/dominio/Vehiculo');
 
 const HOY = '2026-10-01';
 const datosValidos = () => ({
@@ -236,5 +237,30 @@ describe('Unitaria - CodigoVerificacion', () => {
     test('acepta el código aunque tenga espacios alrededor', () => {
         const codigo = CodigoVerificacion.crear('ana@unisabana.edu.co', '123456', 0);
         assert.doesNotThrow(() => codigo.validar(' 123456 ', 0));
+    });
+});
+
+describe('Unitaria - Vehiculo (placa y descripción del carro)', () => {
+    test('una placa válida se guarda en mayúsculas y sin espacios ni guiones', () => {
+        assert.strictEqual(new Vehiculo('c1', 'abc 123', 'Spark gris').placa, 'ABC123');
+        assert.strictEqual(new Vehiculo('c1', 'xyz-987', 'Spark gris').placa, 'XYZ987');
+    });
+
+    test('placas con otro formato se rechazan', () => {
+        for (const placa of ['AB123', 'ABCD123', 'ABC12', '123ABC', 'ABC12D']) {
+            assert.throws(() => new Vehiculo('c1', placa, 'Spark gris'), /tres letras y tres números/, placa);
+        }
+    });
+
+    test('la descripción debe tener entre 3 y 100 caracteres (límites)', () => {
+        assert.doesNotThrow(() => new Vehiculo('c1', 'ABC123', 'Kia'));
+        assert.doesNotThrow(() => new Vehiculo('c1', 'ABC123', 'a'.repeat(100)));
+        assert.throws(() => new Vehiculo('c1', 'ABC123', 'Ki'), /entre 3 y 100/);
+        assert.throws(() => new Vehiculo('c1', 'ABC123', 'a'.repeat(101)), /entre 3 y 100/);
+    });
+
+    test('sin placa o sin descripción se rechaza', () => {
+        assert.throws(() => new Vehiculo('c1', '', 'Spark gris'), /Faltan/);
+        assert.throws(() => new Vehiculo('c1', 'ABC123', '   '), /Faltan/);
     });
 });

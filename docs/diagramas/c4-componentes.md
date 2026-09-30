@@ -11,12 +11,12 @@ flowchart LR
         subgraph APLICACION["Aplicación: casos de uso"]
             SU["ServicioUsuarios<br/>ingreso con código"]
             ST["ServicioTiempoEstimado<br/>caché + respaldo"]
-            SV["ServicioViajes<br/>programar, buscar, cancelar"]
+            SV["ServicioViajes<br/>vehículo, programar, buscar, cancelar"]
             SR["ServicioReservas<br/>reservar, validar QR"]
             SE["ServicioEmergencia<br/>activar alerta"]
         end
         subgraph DOMINIO["Dominio"]
-            D["Usuario · CodigoVerificacion<br/>Viaje · Reserva<br/>ContactoEmergencia<br/>ViajeFactory"]
+            D["Usuario · CodigoVerificacion<br/>Vehiculo · Viaje · Reserva<br/>ContactoEmergencia<br/>ViajeFactory"]
         end
         subgraph PUERTOS["Puertos (interfaces)"]
             PRepo["IRepositorioViajes"]

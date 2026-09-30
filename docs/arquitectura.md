@@ -28,9 +28,10 @@ El profesor nos asignó tres retos para este corte. Cada uno exige agregar funci
 
 1. **Solo estudiantes de La Sabana:** para ingresar a la app se usa el correo institucional (`@unisabana.edu.co`). El sistema envía un **código de 6 dígitos** al correo, que vence en 10 minutos y solo sirve una vez. Sin correo verificado no se puede reservar ni programar viajes.
 2. **Solo aborda el pasajero que el conductor aceptó:** el pasajero **solicita un cupo** escribiendo dónde lo recogen, y el conductor decide si lo acepta o lo rechaza. Solo al aceptar se genera un **código QR único** ligado a esa reserva. Al abordar, el conductor lo escanea y el backend confirma si el código es válido, si pertenece a ese viaje y si no se ha usado antes. El código **vence** al terminar el día del viaje.
+3. **El pasajero también verifica el carro:** el conductor registra la placa y la descripción de su vehículo (marca, modelo y color) antes de programar viajes. El pasajero ve el nombre del conductor al buscar, y la placa y la descripción solo cuando lo aceptan, junto a su QR. Así sabe a qué carro subirse sin exponer la placa a cualquiera.
 
 **Atributos de calidad:**
-- **Seguridad** (principal): solo estudiantes verificados usan la app y solo quien reservó puede abordar; los códigos no se adivinan ni se reutilizan.
+- **Seguridad** (principal): solo estudiantes verificados usan la app y solo quien reservó puede abordar; los códigos no se adivinan ni se reutilizan. El pasajero confirma la placa antes de subirse.
 - **Mantenibilidad**: si mañana cambiamos la librería de QR o la forma de firmar el código, no debería cambiar la lógica de reservas.
 
 ### Reto 2 – Contacto de emergencia
@@ -156,12 +157,12 @@ flowchart LR
         subgraph APLICACION["Aplicación: casos de uso"]
             SU["ServicioUsuarios<br/>ingreso con código"]
             ST["ServicioTiempoEstimado<br/>caché + respaldo"]
-            SV["ServicioViajes<br/>programar, buscar, cancelar"]
+            SV["ServicioViajes<br/>vehículo, programar, buscar, cancelar"]
             SR["ServicioReservas<br/>reservar, validar QR"]
             SE["ServicioEmergencia<br/>activar alerta"]
         end
         subgraph DOMINIO["Dominio"]
-            D["Usuario · CodigoVerificacion<br/>Viaje · Reserva<br/>ContactoEmergencia<br/>ViajeFactory"]
+            D["Usuario · CodigoVerificacion<br/>Vehiculo · Viaje · Reserva<br/>ContactoEmergencia<br/>ViajeFactory"]
         end
         subgraph PUERTOS["Puertos (interfaces)"]
             PRepo["IRepositorioViajes"]
@@ -193,7 +194,7 @@ flowchart LR
 
 ```
 backend/src/
-├── dominio/            ← Usuario, CodigoVerificacion, Viaje, Reserva, ContactoEmergencia, ViajeFactory
+├── dominio/            ← Usuario, CodigoVerificacion, Vehiculo, Viaje, Reserva, ContactoEmergencia, ViajeFactory
 ├── aplicacion/         ← ServicioUsuarios, ServicioViajes, ServicioReservas, ServicioEmergencia, ServicioTiempoEstimado
 ├── puertos/            ← IRepositorioViajes, IGeneradorCodigo, INotificador, IServicioRutas
 ├── adaptadores/
@@ -230,9 +231,9 @@ La app (Expo / React Native) es el cliente de la API. Aplica la misma idea de se
 | Pantalla | Rol | Reto |
 |---|---|---|
 | Ingreso y verificación del correo | Todos | 1 |
-| Viajes: buscar, ver por dónde pasa, "¿Cuánto me demoro?" con mapa, y solicitar cupo con punto de recogida | Pasajero | 3 y 1 |
-| Mis reservas: estado de la solicitud, código QR (si fue aceptada) y tiempo estimado | Pasajero | 1 y 3 |
-| Mis viajes: programar (con "por dónde pasa") y cancelar | Conductor | 3 |
+| Viajes: buscar, ver el nombre del conductor y por dónde pasa, "¿Cuánto me demoro?" con mapa, y solicitar cupo con punto de recogida | Pasajero | 3 y 1 |
+| Mis reservas: estado de la solicitud, código QR y "Tu wheels" con la placa (si fue aceptada) y tiempo estimado | Pasajero | 1 y 3 |
+| Mis viajes: Mi vehículo (placa y descripción), programar (con "por dónde pasa") y cancelar | Conductor | 1 y 3 |
 | Solicitudes: aceptar o rechazar pasajeros según el punto de recogida | Conductor | 1 |
 | Validar QR: cámara o código escrito | Conductor | 1 |
 | Emergencia: contacto y botón de pánico (envía la ubicación) | Todos | 2 |
@@ -266,3 +267,4 @@ Ver [pruebas.md](pruebas.md#resultados).
 - **Propuestas para el Corte 3:**
   - Ubicación del conductor en tiempo real para que el pasajero vea qué tan cerca está.
   - Autocompletar direcciones mientras se escriben.
+  - Que el botón de pánico envíe un SMS real al celular del contacto. La forma más sencilla es abrir la app de mensajes del celular con el número y la ubicación ya escritos; la automática es un adaptador nuevo de `INotificador` con un proveedor como Twilio.

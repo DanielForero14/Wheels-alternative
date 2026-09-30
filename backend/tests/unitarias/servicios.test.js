@@ -7,6 +7,7 @@ const { describe, test, mock } = require('node:test');
 const assert = require('node:assert');
 const RepositorioMemoria = require('../../src/adaptadores/salida/persistencia/RepositorioMemoria');
 const Usuario = require('../../src/dominio/Usuario');
+const Vehiculo = require('../../src/dominio/Vehiculo');
 const ServicioUsuarios = require('../../src/aplicacion/ServicioUsuarios');
 const ServicioViajes = require('../../src/aplicacion/ServicioViajes');
 const ServicioReservas = require('../../src/aplicacion/ServicioReservas');
@@ -34,10 +35,11 @@ function generadorFalso() {
     };
 }
 
-// Repositorio con un conductor y una pasajera ya verificados.
+// Repositorio con un conductor (con su vehículo) y una pasajera ya verificados.
 function repoConUsuarios() {
     const repo = new RepositorioMemoria();
     repo.guardarUsuario(new Usuario(CONDUCTOR, 'Carlos', 'conductor', true));
+    repo.guardarVehiculo(new Vehiculo(CONDUCTOR, 'ABC123', 'Chevrolet Spark gris'));
     repo.guardarUsuario(new Usuario(PASAJERA, 'Ana', 'pasajero', true));
     return repo;
 }
@@ -129,6 +131,40 @@ describe('Unitaria - ServicioViajes', () => {
 
         assert.ok(viaje.id);
         assert.strictEqual(repo.buscarViajePorId(viaje.id), viaje);
+    });
+
+    test('sin vehículo registrado no se puede programar un viaje', () => {
+        const repo = repoConUsuarios();
+        repo.guardarUsuario(new Usuario('pedro@unisabana.edu.co', 'Pedro', 'conductor', true));
+        const { viajes } = crearServicios(repo);
+
+        assert.throws(() => viajes.programarViaje(datosViaje({ conductorId: 'pedro@unisabana.edu.co' }), HOY), /registra la información de tu vehículo/);
+    });
+
+    test('el conductor registra su vehículo y lo puede cambiar', () => {
+        const repo = repoConUsuarios();
+        const { viajes } = crearServicios(repo);
+
+        viajes.registrarVehiculo(CONDUCTOR, 'xyz987', 'Mazda 3 azul');
+
+        const vehiculo = viajes.vehiculoDelConductor(CONDUCTOR);
+        assert.strictEqual(vehiculo.placa, 'XYZ987');
+        assert.strictEqual(vehiculo.descripcion, 'Mazda 3 azul');
+    });
+
+    test('un pasajero no puede registrar vehículo', () => {
+        const { viajes } = crearServicios(repoConUsuarios());
+        assert.throws(() => viajes.registrarVehiculo(PASAJERA, 'ABC123', 'Spark gris'), /solo para el rol conductor/);
+    });
+
+    test('la búsqueda muestra el nombre del conductor pero no la placa', () => {
+        const { viajes } = crearServicios(repoConUsuarios());
+        viajes.programarViaje(datosViaje(), HOY);
+
+        const [viaje] = viajes.buscarViajes();
+
+        assert.strictEqual(viaje.conductorNombre, 'Carlos');
+        assert.strictEqual(viaje.placa, undefined);
     });
 
     test('un pasajero no puede programar viajes', () => {
@@ -305,6 +341,23 @@ describe('Unitaria - ServicioReservas (solicitud, aceptación y QR)', () => {
         assert.strictEqual(pendiente.imagenQR, null);
     });
 
+    test('el vehículo del conductor solo se muestra si la solicitud fue aceptada', async () => {
+        const { viaje, servicio, viajes } = preparar();
+        const otroViaje = viajes.programarViaje(datosViaje({ hora: '18:00' }), HOY);
+        await solicitarYAceptar(servicio, viaje);
+        servicio.solicitarCupo(otroViaje.id, PASAJERA, PUNTO);
+
+        const lista = await servicio.reservasDelPasajero(PASAJERA);
+
+        const aceptada = lista.find(r => r.reserva.estado === 'aceptada');
+        const pendiente = lista.find(r => r.reserva.estado === 'pendiente');
+        assert.strictEqual(aceptada.conductorNombre, 'Carlos');
+        assert.strictEqual(aceptada.vehiculo.placa, 'ABC123');
+        assert.strictEqual(aceptada.vehiculo.descripcion, 'Chevrolet Spark gris');
+        assert.strictEqual(pendiente.conductorNombre, 'Carlos');
+        assert.strictEqual(pendiente.vehiculo, null);
+    });
+
     test('abordar con un código válido marca la reserva como usada', async () => {
         const { viaje, servicio } = preparar();
         const { reserva } = await solicitarYAceptar(servicio, viaje);
@@ -388,6 +441,7 @@ describe('Unitaria - ServicioEmergencia (contacto de emergencia y botón de pán
 
         const [, mensaje, destinatario] = sms.notificar.mock.calls[0].arguments;
         assert.match(mensaje, /Chía -> Universidad/);
+        assert.match(mensaje, /placa ABC123/);
         assert.strictEqual(destinatario.telefono, '3001234567');
     });
 

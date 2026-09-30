@@ -75,6 +75,23 @@ function crearApp({ servicioUsuarios, servicioViajes, servicioReservas, servicio
         }
     });
 
+    // Vehículo del conductor: placa y descripción (marca, color...)
+    app.get('/usuarios/:correo/vehiculo', (req, res) => {
+        const vehiculo = servicioViajes.vehiculoDelConductor(req.params.correo);
+        if (!vehiculo) {
+            return res.status(404).json({ error: 'No hay vehículo registrado' });
+        }
+        res.json(vehiculo);
+    });
+
+    app.put('/usuarios/:correo/vehiculo', (req, res) => {
+        try {
+            res.json(servicioViajes.registrarVehiculo(req.params.correo, req.body.placa, req.body.descripcion));
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    });
+
     // Viajes que programó un conductor
     app.get('/usuarios/:correo/viajes', (req, res) => {
         res.json(servicioViajes.viajesDelConductor(req.params.correo));

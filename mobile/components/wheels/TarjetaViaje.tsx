@@ -1,5 +1,5 @@
 // components/wheels/TarjetaViaje.tsx
-// Muestra un viaje: ruta, fecha, hora y cupos.
+// Muestra un viaje: ruta, fecha, hora, cupos y, si llega, el nombre del conductor.
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colores } from '@/constants/colores';
@@ -24,6 +24,7 @@ export default function TarjetaViaje({ viaje, children }: { viaje: Viaje; childr
         {fechaCorta(viaje.fecha)} · {viaje.hora} · {viaje.cuposDisponibles}{' '}
         {viaje.cuposDisponibles === 1 ? 'cupo' : 'cupos'}
       </Text>
+      {viaje.conductorNombre ? <Text style={estilos.ruta2}>Conductor: {viaje.conductorNombre}</Text> : null}
       {viaje.descripcionRuta ? <Text style={estilos.ruta2}>Pasa por: {viaje.descripcionRuta}</Text> : null}
       {children}
     </Tarjeta>

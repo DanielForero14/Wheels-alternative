@@ -38,7 +38,11 @@ export type Viaje = {
   cuposDisponibles: number;
   estado: 'disponible' | 'lleno' | 'cancelado';
   descripcionRuta?: string; // por dónde pasa (lo escribe el conductor)
+  conductorNombre?: string; // llega en la búsqueda de viajes
 };
+
+// Carro del conductor. El pasajero solo lo ve cuando le aceptan la solicitud.
+export type Vehiculo = { conductorId: string; placa: string; descripcion: string };
 
 export type Reserva = {
   id: number;
@@ -51,7 +55,13 @@ export type Reserva = {
   puntoRecogida: string;
 };
 
-export type ReservaConQR = { reserva: Reserva; viaje: Viaje; imagenQR: string | null };
+export type ReservaConQR = {
+  reserva: Reserva;
+  viaje: Viaje;
+  conductorNombre: string;
+  vehiculo: Vehiculo | null; // solo si la solicitud fue aceptada
+  imagenQR: string | null;
+};
 
 export type Solicitud = { reserva: Reserva; viaje: Viaje; pasajero: string };
 
@@ -102,6 +112,17 @@ export const buscarViajes = (filtros: { fecha?: string; origen?: string; destino
     .join('&');
   return pedir<Viaje[]>(`/viajes${parametros ? `?${parametros}` : ''}`);
 };
+
+export async function obtenerVehiculo(correo: string): Promise<Vehiculo | null> {
+  try {
+    return await pedir<Vehiculo>(`/usuarios/${correo}/vehiculo`);
+  } catch {
+    return null; // todavía no ha registrado su vehículo
+  }
+}
+
+export const guardarVehiculo = (correo: string, placa: string, descripcion: string) =>
+  pedir<Vehiculo>(`/usuarios/${correo}/vehiculo`, 'PUT', { placa, descripcion });
 
 export const programarViaje = (datos: Omit<Viaje, 'id' | 'estado'>) =>
   pedir<Viaje>('/viajes', 'POST', datos);

@@ -11,6 +11,7 @@ const Reserva = require('../../src/dominio/Reserva');
 const ContactoEmergencia = require('../../src/dominio/ContactoEmergencia');
 const Usuario = require('../../src/dominio/Usuario');
 const CodigoVerificacion = require('../../src/dominio/CodigoVerificacion');
+const Vehiculo = require('../../src/dominio/Vehiculo');
 
 describe('Integracion - RepositorioSQLite', () => {
     let repo;
@@ -134,6 +135,17 @@ describe('Integracion - RepositorioSQLite', () => {
         assert.strictEqual(repo.buscarCodigoVerificacion('ana@unisabana.edu.co').codigo, '222222');
         repo.borrarCodigoVerificacion('ana@unisabana.edu.co');
         assert.strictEqual(repo.buscarCodigoVerificacion('ana@unisabana.edu.co'), null);
+    });
+
+    test('guarda el vehículo del conductor y lo reemplaza si lo cambia', () => {
+        repo.guardarVehiculo(new Vehiculo('c1', 'ABC123', 'Spark gris'));
+        repo.guardarVehiculo(new Vehiculo('c1', 'XYZ987', 'Mazda 3 azul'));
+
+        const leido = repo.buscarVehiculo('c1');
+        assert.ok(leido instanceof Vehiculo);
+        assert.strictEqual(leido.placa, 'XYZ987');
+        assert.strictEqual(leido.descripcion, 'Mazda 3 azul');
+        assert.strictEqual(repo.buscarVehiculo('nadie'), null);
     });
 
     test('con archivo, los viajes siguen ahí después de reiniciar (Reto 3: no se pierden)', async () => {

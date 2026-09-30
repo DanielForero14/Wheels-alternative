@@ -19,6 +19,9 @@ class IRepositorioViajes {
     guardarContacto(contacto) { throw new Error('No implementado'); }
     buscarContacto(usuarioId) { throw new Error('No implementado'); }
 
+    guardarVehiculo(vehiculo) { throw new Error('No implementado'); }
+    buscarVehiculo(conductorId) { throw new Error('No implementado'); }
+
     guardarUsuario(usuario) { throw new Error('No implementado'); }
     buscarUsuario(correo) { throw new Error('No implementado'); }
     guardarCodigoVerificacion(codigo) { throw new Error('No implementado'); }

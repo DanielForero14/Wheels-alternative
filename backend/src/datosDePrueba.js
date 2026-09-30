@@ -1,8 +1,9 @@
 // datosDePrueba.js
 // Carga datos de ejemplo al arrancar con "npm run start:carga".
-// Se usa en las pruebas de carga (k6): deja un conductor verificado y 500 viajes
+// Se usa en las pruebas de carga (k6): deja un conductor verificado con su vehículo y 500 viajes
 // programados en los próximos 7 días.
 const Usuario = require('./dominio/Usuario');
+const Vehiculo = require('./dominio/Vehiculo');
 
 const CONDUCTOR_PRUEBA = 'conductor.prueba@unisabana.edu.co';
 const ORIGENES = ['Chía', 'Cajicá', 'Zipaquirá', 'Cota', 'Suba'];
@@ -16,6 +17,7 @@ function fechaEnDias(dias) {
 
 function cargarDatosDePrueba(repositorio, servicioViajes, cantidad = 500) {
     repositorio.guardarUsuario(new Usuario(CONDUCTOR_PRUEBA, 'Conductor de prueba', 'conductor', true));
+    repositorio.guardarVehiculo(new Vehiculo(CONDUCTOR_PRUEBA, 'ABC123', 'Carro de prueba'));
     for (let i = 0; i < cantidad; i++) {
         servicioViajes.programarViaje({
             conductorId: CONDUCTOR_PRUEBA,

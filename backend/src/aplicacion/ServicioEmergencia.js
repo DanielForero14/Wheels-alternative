@@ -35,7 +35,9 @@ class ServicioEmergencia {
         let mensaje = `ALERTA de ${usuarioId}: activó el botón de pánico en WHEELS.`;
         if (viaje) {
             mensaje += ` Viaje ${viaje.puntoInicio} -> ${viaje.puntoFinal}, ` +
-                `${viaje.fecha} ${viaje.hora}, conductor ${viaje.conductorId}.`;
+                `${viaje.fecha} ${viaje.hora}, conductor ${viaje.conductorId}`;
+            const vehiculo = this.repositorio.buscarVehiculo(viaje.conductorId);
+            mensaje += vehiculo ? `, placa ${vehiculo.placa}.` : '.';
         }
         if (ubicacion && Number.isFinite(Number(ubicacion.lat)) && Number.isFinite(Number(ubicacion.lon))) {
             mensaje += ` Ubicación: https://maps.google.com/?q=${ubicacion.lat},${ubicacion.lon}`;

@@ -76,14 +76,19 @@ class ServicioReservas {
         return resultado;
     }
 
-    // Reservas del pasajero con su viaje; la imagen QR solo si el conductor aceptó (pantalla "Mis reservas").
+    // Reservas del pasajero con su viaje y el nombre del conductor (pantalla "Mis reservas").
+    // La imagen QR y el vehículo (placa y descripción) solo van si el conductor aceptó.
     async reservasDelPasajero(pasajeroId) {
         const reservas = this.repositorio.buscarReservasDePasajero(pasajeroId);
         const resultado = [];
         for (const reserva of reservas) {
             const viaje = this.repositorio.buscarViajePorId(reserva.viajeId);
-            const imagenQR = reserva.estado === 'aceptada' ? await this.generadorCodigo.generarImagenQR(reserva.codigo) : null;
-            resultado.push({ reserva, viaje, imagenQR });
+            const conductor = this.repositorio.buscarUsuario(viaje.conductorId);
+            const conductorNombre = conductor ? conductor.nombre : viaje.conductorId;
+            const aceptada = reserva.estado === 'aceptada';
+            const imagenQR = aceptada ? await this.generadorCodigo.generarImagenQR(reserva.codigo) : null;
+            const vehiculo = aceptada ? this.repositorio.buscarVehiculo(viaje.conductorId) : null;
+            resultado.push({ reserva, viaje, conductorNombre, vehiculo, imagenQR });
         }
         return resultado;
     }

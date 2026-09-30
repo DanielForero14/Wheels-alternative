@@ -8,7 +8,7 @@ Usamos el ejecutor de pruebas que ya trae Node (`node:test` y `node:assert`), as
 
 ## 1. Pruebas unitarias (`backend/tests/unitarias/`)
 
-**Qué prueban:** las reglas del **dominio** (`Usuario`, `CodigoVerificacion`, `Viaje`, `ViajeFactory`, `Reserva`, `ContactoEmergencia`) y los **casos de uso** (`ServicioUsuarios`, `ServicioViajes`, `ServicioReservas`, `ServicioEmergencia`, `ServicioTiempoEstimado`).
+**Qué prueban:** las reglas del **dominio** (`Usuario`, `CodigoVerificacion`, `Vehiculo`, `Viaje`, `ViajeFactory`, `Reserva`, `ContactoEmergencia`) y los **casos de uso** (`ServicioUsuarios`, `ServicioViajes`, `ServicioReservas`, `ServicioEmergencia`, `ServicioTiempoEstimado`).
 
 **Cómo:**
 - Sin base de datos, sin red y sin Express.
@@ -37,6 +37,9 @@ Usamos el ejecutor de pruebas que ya trae Node (`node:test` y `node:assert`), as
 | Solicitud de cupo | punto de recogida de 5 y 150 caracteres (límites); nueva solicitud después de un rechazo | 4 o 151 caracteres; segunda solicitud pendiente al mismo viaje; sin pasajero; pasajero sin verificar |
 | Respuesta del conductor | el conductor del viaje acepta o rechaza una solicitud pendiente | otro conductor; responder dos veces; aceptar cuando ya no hay cupos |
 | Descripción de la ruta | hasta 200 caracteres (límite) | 201 caracteres |
+| Placa del vehículo | `ABC123`, en minúscula, con espacio o guion (se normaliza) | `AB123`, `ABCD123`, `ABC12`, `123ABC`, `ABC12D` |
+| Descripción del vehículo | 3 y 100 caracteres (límites) | 2 y 101 caracteres, vacía |
+| Vehículo del conductor | registrado: puede programar; el pasajero aceptado ve la placa | sin vehículo no programa; el pasajero pendiente no ve la placa; un pasajero no puede registrar vehículo |
 
 **Cobertura:** se mide con `npm run test:cobertura`. Lo que interesa es la cobertura del núcleo (`dominio/` y `aplicacion/`).
 
@@ -56,7 +59,7 @@ Revisan las **fronteras del estilo hexagonal**: que cada adaptador real cumpla s
 **Flujos de sistema de extremo a extremo** (`api.test.js`), usados solo por HTTP:
 - **Ingreso:** pedir código → leerlo del correo simulado → verificarlo. Un correo `@gmail.com` y un código incorrecto responden 400. Sin verificar no se puede programar un viaje.
 - **Reto 3:** programar un viaje → encontrarlo en la búsqueda. Un viaje en fecha pasada responde 400.
-- **Reto 1:** solicitar cupo con punto de recogida (queda pendiente) → el conductor lo ve en sus solicitudes y lo acepta → recibir el QR → verlo en "mis reservas" → abordar (200) → intentar abordar otra vez con el mismo QR (400). Un código inventado responde 400. Una solicitud rechazada no tiene QR y otro conductor no puede responderla. La descripción de por dónde pasa el viaje se ve en la búsqueda.
+- **Reto 1:** solicitar cupo con punto de recogida (queda pendiente) → el conductor lo ve en sus solicitudes y lo acepta → recibir el QR → verlo en "mis reservas" → abordar (200) → intentar abordar otra vez con el mismo QR (400). Un código inventado responde 400. Una solicitud rechazada no tiene QR y otro conductor no puede responderla. La descripción de por dónde pasa el viaje se ve en la búsqueda. Sin vehículo el conductor no puede programar (400) y una placa mal escrita responde 400. En la búsqueda se ve el nombre del conductor pero no la placa; el vehículo aparece en "mis reservas" solo después de que el conductor acepta.
 - **Reto 3 (tiempo estimado):** pedir el tiempo desde una ubicación → la segunda vez sale del caché. Con el servicio de mapas caído, responde el respaldo. Una ubicación inválida responde 400.
 - **Reto 2:** la alerta lleva el link con la ubicación del usuario. Registrar y consultar el contacto → enviar alerta por SMS. El botón de pánico funciona sin viaje activo. Con el SMS caído, la alerta sale por el canal de respaldo. Sin contacto, responde 400.
 - Un viaje sin cupos deja de aparecer en la búsqueda.
@@ -92,7 +95,8 @@ Los reportes se guardan en `perf/resultados/`.
 |---|---|---|---|
 | `npm test` (primera ejecución, antes del tiempo estimado) | 97 (13 grupos) | 97 | 0 |
 | `npm test` (con el tiempo estimado del Reto 3) | 121 (15 grupos) | 121 | 0 |
-| `npm test` (versión final, con solicitudes de cupo y por dónde pasa) | 136 (15 grupos) | 136 | 0 |
+| `npm test` (con solicitudes de cupo y por dónde pasa) | 136 (15 grupos) | 136 | 0 |
+| `npm test` (versión final, con el vehículo del conductor) | 148 (16 grupos) | 148 | 0 |
 
 Todas las pruebas se ejecutan con un solo comando (`npm test`) y tardan menos de 10 segundos.
 

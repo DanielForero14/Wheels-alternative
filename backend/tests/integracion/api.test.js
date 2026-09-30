@@ -58,10 +58,11 @@ const nuevoViaje = (cambios = {}) => ({
     fecha: manana(), hora: '07:00', cuposDisponibles: 2, ...cambios,
 });
 
-// Deja listos un conductor y una pasajera verificados, y un viaje programado.
+// Deja listos un conductor (con su vehículo) y una pasajera verificados, y un viaje programado.
 async function escenarioBasico(opciones) {
     const api = await iniciarApi(opciones);
     await ingresar(api, CONDUCTOR, 'conductor');
+    await pedir(`${api}/usuarios/${CONDUCTOR}/vehiculo`, 'PUT', { placa: 'abc123', descripcion: 'Chevrolet Spark gris' });
     await ingresar(api, PASAJERA, 'pasajero');
     const viaje = (await pedir(`${api}/viajes`, 'POST', nuevoViaje())).datos;
     return { api, viaje };
@@ -148,6 +149,39 @@ describe('Integracion - API (flujos de sistema de extremo a extremo)', () => {
         const respuesta = await pedir(`${api}/viajes`, 'POST', nuevoViaje());
         assert.strictEqual(respuesta.status, 400);
         assert.match(respuesta.datos.error, /no ha verificado/);
+    });
+
+    test('Reto 1: el conductor registra su vehículo; sin vehículo no puede programar viajes', async () => {
+        const api = await iniciarApi();
+        await ingresar(api, CONDUCTOR, 'conductor');
+
+        const sinVehiculo = await pedir(`${api}/viajes`, 'POST', nuevoViaje());
+        const consultaVacia = await pedir(`${api}/usuarios/${CONDUCTOR}/vehiculo`);
+        const placaMala = await pedir(`${api}/usuarios/${CONDUCTOR}/vehiculo`, 'PUT', { placa: 'AB12', descripcion: 'Spark gris' });
+        const registro = await pedir(`${api}/usuarios/${CONDUCTOR}/vehiculo`, 'PUT', { placa: 'abc 123', descripcion: 'Spark gris' });
+        const conVehiculo = await pedir(`${api}/viajes`, 'POST', nuevoViaje());
+
+        assert.strictEqual(sinVehiculo.status, 400);
+        assert.match(sinVehiculo.datos.error, /vehículo/);
+        assert.strictEqual(consultaVacia.status, 404);
+        assert.strictEqual(placaMala.status, 400);
+        assert.strictEqual(registro.datos.placa, 'ABC123');
+        assert.strictEqual(conVehiculo.status, 201);
+    });
+
+    test('Reto 1: el pasajero ve el nombre del conductor, y la placa solo cuando lo aceptan', async () => {
+        const { api, viaje } = await escenarioBasico();
+
+        const busqueda = await pedir(`${api}/viajes`);
+        const solicitud = await pedir(`${api}/viajes/${viaje.id}/reservar`, 'POST', { pasajeroId: PASAJERA, puntoRecogida: 'Portal Norte' });
+        const antes = (await pedir(`${api}/usuarios/${PASAJERA}/reservas`)).datos[0];
+        await pedir(`${api}/reservas/${solicitud.datos.reserva.id}/aceptar`, 'POST', { conductorId: CONDUCTOR });
+        const despues = (await pedir(`${api}/usuarios/${PASAJERA}/reservas`)).datos[0];
+
+        assert.strictEqual(busqueda.datos[0].conductorNombre, 'Estudiante');
+        assert.strictEqual(busqueda.datos[0].placa, undefined);
+        assert.strictEqual(antes.vehiculo, null);
+        assert.deepStrictEqual(despues.vehiculo, { conductorId: CONDUCTOR, placa: 'ABC123', descripcion: 'Chevrolet Spark gris' });
     });
 
     test('Reto 3: un viaje con fecha pasada se rechaza con 400', async () => {
