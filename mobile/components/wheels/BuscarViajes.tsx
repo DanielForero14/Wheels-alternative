@@ -1,7 +1,10 @@
 // components/wheels/BuscarViajes.tsx
 // Pasajero: buscar viajes por fecha, origen y destino, y reservar un cupo (Reto 3 y Reto 1).
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Colores } from '@/constants/colores';
 import { buscarViajes, solicitarCupo, Viaje } from '@/servicios/api';
 import { fechaEnDias } from '@/servicios/fechas';
 import { useSesion } from '@/servicios/sesion';
@@ -16,6 +19,7 @@ export default function BuscarViajes() {
   const [dia, setDia] = useState<Dia>('todos');
   const [origen, setOrigen] = useState('');
   const [destino, setDestino] = useState('');
+  const [mostrarBusqueda, setMostrarBusqueda] = useState(false); // la lupa abre "Desde" y "Hacia"
   const [viajes, setViajes] = useState<Viaje[]>([]);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [solicitando, setSolicitando] = useState<number | null>(null); // viaje con el formulario abierto
@@ -58,20 +62,42 @@ export default function BuscarViajes() {
 
   return (
     <Pantalla>
-      <Encabezado titulo="Viajes" subtitulo={`Hola, ${usuario?.nombre}`} />
+      <Encabezado titulo="Viajes" subtitulo={`Hola, ${usuario?.nombre}`} conSalir />
 
-      <Opciones
-        opciones={[
-          { valor: 'todos', texto: 'Todos' },
-          { valor: 'hoy', texto: 'Hoy' },
-          { valor: 'manana', texto: 'Mañana' },
-        ]}
-        valor={dia}
-        onCambio={setDia}
-      />
-      <Campo etiqueta="Desde" value={origen} onChangeText={setOrigen} placeholder="Ej: Chía" />
-      <Campo etiqueta="Hacia" value={destino} onChangeText={setDestino} placeholder="Ej: Universidad" />
-      <Boton texto="Buscar" onPress={buscar} />
+      <View style={estilos.filaFiltros}>
+        <View style={{ flex: 1 }}>
+          <Opciones
+            opciones={[
+              { valor: 'todos', texto: 'Todos' },
+              { valor: 'hoy', texto: 'Hoy' },
+              { valor: 'manana', texto: 'Mañana' },
+            ]}
+            valor={dia}
+            onCambio={setDia}
+          />
+        </View>
+        <Pressable
+          onPress={() => {
+            if (mostrarBusqueda) {
+              // al cerrar la búsqueda se quitan los filtros de lugar
+              setOrigen('');
+              setDestino('');
+            }
+            setMostrarBusqueda(!mostrarBusqueda);
+          }}
+          style={[estilos.lupa, mostrarBusqueda && { backgroundColor: Colores.azul }]}
+          hitSlop={6}>
+          <Ionicons name="search-outline" size={22} color={mostrarBusqueda ? Colores.blanco : Colores.azul} />
+        </Pressable>
+      </View>
+
+      {mostrarBusqueda ? (
+        <>
+          <Campo etiqueta="Desde" value={origen} onChangeText={setOrigen} />
+          <Campo etiqueta="Hacia" value={destino} onChangeText={setDestino} />
+          <Boton texto="Buscar" onPress={buscar} />
+        </>
+      ) : null}
 
       {aviso ? <Aviso tipo={aviso.tipo} texto={aviso.texto} /> : null}
       {aviso?.tipo === 'exito' ? (
@@ -109,3 +135,17 @@ export default function BuscarViajes() {
     </Pantalla>
   );
 }
+
+const estilos = StyleSheet.create({
+  filaFiltros: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  lupa: {
+    width: 46,
+    height: 46,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colores.azul,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colores.blanco,
+  },
+});

@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Aviso, Boton, Campo, Opciones, Pantalla, TextoSuave } from '@/components/wheels/ui';
+import { Aviso, Boton, Campo, Opciones, Pantalla } from '@/components/wheels/ui';
 import { Colores } from '@/constants/colores';
 import { Rol, solicitarCodigo } from '@/servicios/api';
 
@@ -29,19 +29,18 @@ export default function Ingreso() {
   };
 
   return (
-    <Pantalla>
+    <Pantalla fija>
       <View style={estilos.marca}>
         <Image source={require('@/assets/images/logo.png')} style={estilos.logo} />
         <Text style={estilos.nombreApp}>WHEELS</Text>
-        <TextoSuave>Viajes compartidos entre estudiantes de La Sabana</TextoSuave>
+        <Text style={estilos.lema}>Viajes compartidos entre estudiantes de La Sabana</Text>
       </View>
 
-      <Campo etiqueta="Nombre" value={nombre} onChangeText={setNombre} placeholder="Tu nombre" />
+      <Campo etiqueta="Nombre" value={nombre} onChangeText={setNombre} />
       <Campo
         etiqueta="Correo institucional"
         value={correo}
         onChangeText={setCorreo}
-        placeholder="usuario@unisabana.edu.co"
         autoCapitalize="none"
         keyboardType="email-address"
       />
@@ -58,14 +57,14 @@ export default function Ingreso() {
 
       {error ? <Aviso tipo="error" texto={error} /> : null}
       <Boton texto="Enviar código" onPress={enviar} cargando={cargando} />
-      <TextoSuave>Te enviaremos un código de 6 dígitos a tu correo para confirmar que eres estudiante.</TextoSuave>
     </Pantalla>
   );
 }
 
 const estilos = StyleSheet.create({
-  marca: { alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 12 },
-  logo: { width: 96, height: 96, borderRadius: 22 },
-  nombreApp: { fontSize: 30, fontWeight: '800', color: Colores.azulOscuro, letterSpacing: 2 },
+  marca: { alignItems: 'center', gap: 2, marginBottom: 6 },
+  logo: { width: 68, height: 68, borderRadius: 16 },
+  lema: { fontSize: 14, color: Colores.textoSuave, textAlign: 'center' },
+  nombreApp: { fontSize: 26, fontWeight: '800', color: Colores.azulOscuro, letterSpacing: 2 },
   etiqueta: { fontSize: 14, color: Colores.texto, fontWeight: '600' },
 });

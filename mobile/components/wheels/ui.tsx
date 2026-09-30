@@ -1,5 +1,6 @@
 // components/wheels/ui.tsx
 // Piezas visuales reutilizables de WHEELS: sencillas, en blanco y azul.
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -15,31 +16,46 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colores } from '@/constants/colores';
 import { useSesion } from '@/servicios/sesion';
 
-// Contenedor de cada pantalla, con desplazamiento.
-export function Pantalla({ children }: { children: ReactNode }) {
+// Contenedor de cada pantalla.
+// Con "fija" el contenido queda centrado y compacto: si cabe en la pantalla no se mueve,
+// y solo en pantallas muy pequeñas permite bajar, para que ningún botón quede escondido.
+export function Pantalla({ children, fija = false }: { children: ReactNode; fija?: boolean }) {
   return (
     <SafeAreaView style={estilos.pantalla} edges={['top']}>
-      <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[estilos.contenido, fija && estilos.contenidoFijo]}
+        keyboardShouldPersistTaps="handled"
+        bounces={!fija}>
         {children}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Título de la pantalla con el nombre del usuario y el botón para salir.
-export function Encabezado({ titulo, subtitulo }: { titulo: string; subtitulo?: string }) {
+// Título de la pantalla. Con "conSalir" muestra el enlace rojo para cerrar sesión.
+export function Encabezado({
+  titulo,
+  subtitulo,
+  conSalir = false,
+}: {
+  titulo: string;
+  subtitulo?: string;
+  conSalir?: boolean;
+}) {
   const { usuario, cerrarSesion } = useSesion();
   return (
     <View style={estilos.encabezado}>
-      <View style={{ flex: 1 }}>
-        <Text style={estilos.titulo}>{titulo}</Text>
-        {subtitulo ? <Text style={estilos.subtitulo}>{subtitulo}</Text> : null}
+      {/* El título y el botón Salir van en la misma fila para que queden alineados */}
+      <View style={estilos.filaTitulo}>
+        <Text style={[estilos.titulo, { flex: 1 }]}>{titulo}</Text>
+        {conSalir && usuario ? (
+          <Pressable onPress={cerrarSesion} hitSlop={10} style={estilos.salirFila}>
+            <Text style={estilos.salir}>Salir</Text>
+            <Ionicons name="log-out-outline" size={20} color={Colores.panico} />
+          </Pressable>
+        ) : null}
       </View>
-      {usuario ? (
-        <Pressable onPress={cerrarSesion} hitSlop={10}>
-          <Text style={estilos.salir}>Salir</Text>
-        </Pressable>
-      ) : null}
+      {subtitulo ? <Text style={estilos.subtitulo}>{subtitulo}</Text> : null}
     </View>
   );
 }
@@ -146,10 +162,13 @@ export function TextoSuave({ children }: { children: ReactNode }) {
 export const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: Colores.fondo },
   contenido: { padding: 20, paddingBottom: 40, gap: 14, width: '100%', maxWidth: 560, alignSelf: 'center' },
-  encabezado: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  contenidoFijo: { flexGrow: 1, justifyContent: 'center', gap: 10, paddingTop: 12, paddingBottom: 12 },
+  encabezado: { marginBottom: 6 },
+  filaTitulo: { flexDirection: 'row', alignItems: 'center' },
   titulo: { fontSize: 26, fontWeight: '700', color: Colores.azulOscuro },
   subtitulo: { fontSize: 14, color: Colores.textoSuave, marginTop: 2 },
-  salir: { color: Colores.azul, fontSize: 15, fontWeight: '600' },
+  salirFila: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  salir: { color: Colores.panico, fontSize: 15, fontWeight: '600' },
   boton: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   botonPrimario: { backgroundColor: Colores.azul },
   botonSecundario: { backgroundColor: Colores.blanco, borderWidth: 1.5, borderColor: Colores.azul },

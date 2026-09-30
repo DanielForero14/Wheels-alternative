@@ -7,7 +7,6 @@ WHEELS organiza los viajes compartidos entre estudiantes de La Sabana: se ingres
 - [ADR-001: arquitectura hexagonal](docs/adr/ADR-001-arquitectura-hexagonal.md)
 - [Diagramas](docs/diagramas/): contexto, contenedores y componentes (C4) y arquitectura inicial del Corte 1.
 - [Estrategia y resultados de pruebas](docs/pruebas.md)
-- [Evaluación de UX](ux/hallazgos.md): método, resultados del cuestionario SUS y hallazgos
 - [Entrega del Corte 1](docs/corte1.md) (se conserva como referencia)
 
 ---
@@ -147,7 +146,6 @@ mobile/
 ├── servicios/              ← api.ts (único que habla con el backend), sesión, ubicación y fechas
 ├── constants/colores.ts    ← paleta blanco y azul del logo
 └── assets/images/logo.png  ← logo de WHEELS
-ux/                         ← evaluación de usabilidad (SUS y hallazgos)
 ```
 
 **Regla de dependencias:** `dominio/` y `aplicacion/` nunca importan Express, SQLite ni la librería de QR. Solo conocen los `puertos/`.

@@ -41,10 +41,7 @@ export default function Verificar() {
       {error ? <Aviso tipo="error" texto={error} /> : null}
       <Boton texto="Verificar" onPress={verificar} cargando={cargando} deshabilitado={codigo.length !== 6} />
       <Boton texto="Cambiar correo" tipo="secundario" onPress={() => router.back()} />
-      <TextoSuave>
-        El código vence en 10 minutos. En esta versión de prueba el correo es simulado: el código aparece en la
-        consola del servidor.
-      </TextoSuave>
+      <TextoSuave>El código vence en 10 minutos.</TextoSuave>
     </Pantalla>
   );
 }
