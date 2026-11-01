@@ -6,7 +6,8 @@ const armarApp = require('./configuracion');
 const PORT = process.env.PORT || 3000;
 // "npm run start:carga" usa una base de datos en memoria con 500 viajes de ejemplo (pruebas de carga).
 const modoCarga = process.argv.includes('--carga');
-const rutaBD = modoCarga ? null : path.join(__dirname, '..', 'wheels.db');
+// RUTA_BD permite guardar la base de datos en otra carpeta (en Docker, un volumen).
+const rutaBD = modoCarga ? null : (process.env.RUTA_BD || path.join(__dirname, '..', 'wheels.db'));
 // "npm run start:falla-sms" simula que el SMS está caído, para mostrar en la demo
 // que la alerta de emergencia se envía por el canal de respaldo.
 const simularFallaSMS = process.argv.includes('--falla-sms');
