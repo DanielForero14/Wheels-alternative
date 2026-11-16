@@ -1,0 +1,12 @@
+node_modules/
+tests/
+wheels.db
+*.log
+.git/
+.vscode/
+.idea/
+*.md
+.env
+.env.*
+Dockerfile
+.dockerignore
