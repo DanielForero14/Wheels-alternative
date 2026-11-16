@@ -3,6 +3,7 @@
 // También envía el código de verificación del correo y es el canal de respaldo
 // de las alertas de emergencia.
 const INotificador = require('../../../puertos/INotificador');
+const textoParaLog = require('./textoParaLog');
 
 class ConsolaNotificador extends INotificador {
     notificar(viaje, mensaje, destinatario) {
@@ -11,7 +12,7 @@ class ConsolaNotificador extends INotificador {
             para = destinatario.correo || destinatario.nombre;
         }
         const referencia = viaje ? ` - Viaje #${viaje.id}` : '';
-        console.log(`[EMAIL a ${para}${referencia}] ${mensaje}`);
+        console.log(`[EMAIL a ${textoParaLog(para)}${referencia}] ${textoParaLog(mensaje)}`);
     }
 }
 

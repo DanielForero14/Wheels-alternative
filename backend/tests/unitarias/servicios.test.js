@@ -95,6 +95,32 @@ describe('Unitaria - ServicioUsuarios (ingreso con correo institucional)', () =>
         assert.throws(() => servicio.verificarCodigo(PASAJERA, '000000', 1000), /no es correcto/);
     });
 
+    test('los intentos fallidos se guardan: tras 5 fallos el código queda bloqueado', () => {
+        const repo = new RepositorioMemoria();
+        const servicio = new ServicioUsuarios(repo, generadorFalso(), notificadorEspia());
+        servicio.solicitarCodigo('Ana', PASAJERA, 'pasajero', 0);
+
+        for (let i = 0; i < 5; i++) {
+            assert.throws(() => servicio.verificarCodigo(PASAJERA, '000000', 1000), /no es correcto/);
+        }
+
+        assert.strictEqual(repo.buscarCodigoVerificacion(PASAJERA).intentosFallidos, 5);
+        assert.throws(() => servicio.verificarCodigo(PASAJERA, '123456', 1000), /Demasiados intentos/);
+        assert.strictEqual(repo.buscarUsuario(PASAJERA).verificado, false);
+    });
+
+    test('pedir un código nuevo reinicia los intentos', () => {
+        const servicio = new ServicioUsuarios(new RepositorioMemoria(), generadorFalso(), notificadorEspia());
+        servicio.solicitarCodigo('Ana', PASAJERA, 'pasajero', 0);
+        for (let i = 0; i < 5; i++) {
+            assert.throws(() => servicio.verificarCodigo(PASAJERA, '000000', 1000));
+        }
+
+        servicio.solicitarCodigo('Ana', PASAJERA, 'pasajero', 2000);
+
+        assert.strictEqual(servicio.verificarCodigo(PASAJERA, '123456', 3000).verificado, true);
+    });
+
     test('un código ya usado no sirve otra vez', () => {
         const servicio = new ServicioUsuarios(new RepositorioMemoria(), generadorFalso(), notificadorEspia());
         servicio.solicitarCodigo('Ana', PASAJERA, 'pasajero', 0);

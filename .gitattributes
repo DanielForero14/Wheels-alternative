@@ -1,0 +1,4 @@
+# Normaliza los saltos de línea en el repositorio.
+* text=auto
+# Los scripts de shell siempre con LF: con CRLF fallan en Linux (runners de GitHub y el servidor de despliegue).
+*.sh text eol=lf

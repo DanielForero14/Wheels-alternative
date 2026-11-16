@@ -398,6 +398,22 @@ describe('Integracion - Seguridad: autenticación y autorización', () => {
         assert.match(respuesta.datos.error, /solo para el rol conductor/);
     });
 
+    test('Suplantación por fuerza bruta: tras 5 códigos incorrectos ni el correcto entrega token', async () => {
+        const api = await iniciarApi();
+        await pedir(`${api}/auth/solicitar-codigo`, 'POST', { nombre: 'Ana', correo: PASAJERA, rol: 'pasajero' });
+        const codigoReal = codigoEnviadoA(PASAJERA);
+        const incorrecto = codigoReal === '000000' ? '111111' : '000000';
+
+        for (let i = 0; i < 5; i++) {
+            await pedir(`${api}/auth/verificar`, 'POST', { correo: PASAJERA, codigo: incorrecto });
+        }
+        const conElCorrecto = await pedir(`${api}/auth/verificar`, 'POST', { correo: PASAJERA, codigo: codigoReal });
+
+        assert.strictEqual(conElCorrecto.status, 400);
+        assert.match(conElCorrecto.datos.error, /Demasiados intentos/);
+        assert.strictEqual(conElCorrecto.datos.token, undefined);
+    });
+
     test('un JSON mal formado responde 400 sin mostrar detalles internos', async () => {
         const api = await iniciarApi();
         const respuesta = await fetch(`${api}/auth/verificar`, {

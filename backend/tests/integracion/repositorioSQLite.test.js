@@ -137,6 +137,11 @@ describe('Integracion - RepositorioSQLite', () => {
         assert.strictEqual(repo.buscarCodigoVerificacion('ana@unisabana.edu.co'), null);
     });
 
+    test('guarda los intentos fallidos del código de verificación', () => {
+        repo.guardarCodigoVerificacion(new CodigoVerificacion('ana@unisabana.edu.co', '111111', 5000, 3));
+        assert.strictEqual(repo.buscarCodigoVerificacion('ana@unisabana.edu.co').intentosFallidos, 3);
+    });
+
     test('guarda el vehículo del conductor y lo reemplaza si lo cambia', () => {
         repo.guardarVehiculo(new Vehiculo('c1', 'ABC123', 'Spark gris'));
         repo.guardarVehiculo(new Vehiculo('c1', 'XYZ987', 'Mazda 3 azul'));

@@ -36,7 +36,7 @@ const TABLAS = `
         correo TEXT PRIMARY KEY, nombre TEXT, rol TEXT, verificado INTEGER
     );
     CREATE TABLE IF NOT EXISTS codigos_verificacion (
-        correo TEXT PRIMARY KEY, codigo TEXT, expira INTEGER
+        correo TEXT PRIMARY KEY, codigo TEXT, expira INTEGER, intentosFallidos INTEGER DEFAULT 0
     );
 `;
 
@@ -56,6 +56,7 @@ class RepositorioSQLite extends IRepositorioViajes {
             'ALTER TABLE viajes ADD COLUMN descripcionRuta TEXT',
             "ALTER TABLE reservas ADD COLUMN estado TEXT DEFAULT 'aceptada'",
             'ALTER TABLE reservas ADD COLUMN puntoRecogida TEXT',
+            'ALTER TABLE codigos_verificacion ADD COLUMN intentosFallidos INTEGER DEFAULT 0',
         ]) {
             try { db.run(columna); } catch (e) { /* la columna ya existe */ }
         }
@@ -187,8 +188,8 @@ class RepositorioSQLite extends IRepositorioViajes {
     }
 
     guardarCodigoVerificacion(codigo) {
-        this._ejecutar('INSERT OR REPLACE INTO codigos_verificacion (correo, codigo, expira) VALUES (?, ?, ?)',
-            [codigo.correo, codigo.codigo, codigo.expira]);
+        this._ejecutar('INSERT OR REPLACE INTO codigos_verificacion (correo, codigo, expira, intentosFallidos) VALUES (?, ?, ?, ?)',
+            [codigo.correo, codigo.codigo, codigo.expira, codigo.intentosFallidos || 0]);
         return codigo;
     }
 
@@ -196,7 +197,7 @@ class RepositorioSQLite extends IRepositorioViajes {
         const filas = this._consultar('SELECT * FROM codigos_verificacion WHERE correo = ?', [correo]);
         if (!filas.length) return null;
         const f = filas[0];
-        return new CodigoVerificacion(f.correo, f.codigo, f.expira);
+        return new CodigoVerificacion(f.correo, f.codigo, f.expira, f.intentosFallidos || 0);
     }
 
     borrarCodigoVerificacion(correo) {

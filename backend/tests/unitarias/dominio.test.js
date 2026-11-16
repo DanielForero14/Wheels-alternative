@@ -260,6 +260,31 @@ describe('Unitaria - CodigoVerificacion', () => {
         const codigo = CodigoVerificacion.crear('ana@unisabana.edu.co', '123456', 0);
         assert.doesNotThrow(() => codigo.validar(' 123456 ', 0));
     });
+
+    // Amenaza S-01 (fuerza bruta del código): máximo 5 intentos fallidos.
+    test('cada intento fallido se cuenta y dice cuántos quedan', () => {
+        const codigo = CodigoVerificacion.crear('ana@unisabana.edu.co', '123456', 0);
+        assert.throws(() => codigo.validar('000000', 0), /te quedan 4 intentos/);
+        assert.strictEqual(codigo.intentosFallidos, 1);
+    });
+
+    test('con 4 fallos el código correcto todavía sirve (valor límite)', () => {
+        const codigo = CodigoVerificacion.crear('ana@unisabana.edu.co', '123456', 0);
+        for (let i = 0; i < 4; i++) {
+            assert.throws(() => codigo.validar('000000', 0));
+        }
+        assert.doesNotThrow(() => codigo.validar('123456', 0));
+    });
+
+    test('al quinto fallo se bloquea y ni el código correcto sirve', () => {
+        const codigo = CodigoVerificacion.crear('ana@unisabana.edu.co', '123456', 0);
+        for (let i = 0; i < 4; i++) {
+            assert.throws(() => codigo.validar('000000', 0));
+        }
+        assert.throws(() => codigo.validar('000000', 0), /se bloqueó/);
+        assert.throws(() => codigo.validar('123456', 0), /Demasiados intentos/);
+        assert.strictEqual(codigo.intentosFallidos, CodigoVerificacion.MAXIMO_INTENTOS);
+    });
 });
 
 describe('Unitaria - Vehiculo (placa y descripción del carro)', () => {
