@@ -1,0 +1,193 @@
+name: CI
+
+# Integración continua de WHEELS: construcción, reglas de la arquitectura hexagonal,
+# pruebas unitarias (con el umbral de cobertura del dominio), pruebas de integración y la app móvil.
+# Cada job es un check del Pull Request: si alguno falla, el cambio no se puede fusionar a main.
+#
+# Cuándo corre: en cada push y en cada Pull Request hacia main, y a mano desde la pestaña Actions.
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+# Mínimo privilegio: por defecto los jobs solo pueden leer el código.
+permissions:
+  contents: read
+
+# Si llega un push nuevo a la misma rama, se cancela la ejecución anterior (ahorra minutos).
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  construccion:
+    name: Construcción
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24 (con caché de dependencias npm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # npm ci instala exactamente lo que dice package-lock.json: si una dependencia no se resuelve, falla aquí.
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # Node no compila: se revisa la sintaxis y se cargan todos los módulos para comprobar que resuelven.
+      - name: Construcción (sintaxis y carga de todos los módulos)
+        run: npm run construir
+
+  arquitectura:
+    name: Reglas de arquitectura
+    needs: construccion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24 (con caché de dependencias npm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # Funciones de aptitud del ADR-001 (backend/.dependency-cruiser.cjs). Falla si el dominio o la
+      # aplicación importan infraestructura, o si alguien distinto de configuracion.js usa un adaptador.
+      - name: Reglas de dependencias de la arquitectura hexagonal
+        run: npm run arquitectura
+
+      - name: Grafo de dependencias (reporte)
+        if: always()
+        run: |
+          mkdir -p reportes
+          npx depcruise src --config .dependency-cruiser.cjs --output-type html > reportes/arquitectura.html
+
+      - name: Publicar reporte de arquitectura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-arquitectura
+          path: backend/reportes/arquitectura.html
+          if-no-files-found: ignore
+
+  pruebas-unitarias:
+    name: Pruebas unitarias y cobertura del dominio
+    needs: construccion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24 (con caché de dependencias npm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # El umbral está en el propio comando (--test-coverage-lines=80 sobre src/dominio):
+      # si la cobertura de líneas del dominio baja del 80 %, node --test termina con error.
+      - name: Pruebas unitarias con umbral de cobertura del dominio (>= 80 %)
+        run: npm run test:unitarias
+
+      - name: Resumen de cobertura del dominio
+        if: always()
+        run: |
+          if [ -f reportes/cobertura-dominio.lcov ]; then
+            node -e "
+              const lineas = require('fs').readFileSync('reportes/cobertura-dominio.lcov', 'utf8').split('\n');
+              const suma = (p) => lineas.filter(l => l.startsWith(p)).reduce((t, l) => t + Number(l.slice(3)), 0);
+              const total = suma('LF:'), cubiertas = suma('LH:');
+              console.log('### Cobertura de líneas del dominio: ' + (100 * cubiertas / total).toFixed(2) + ' % (umbral 80 %)');
+            " >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publicar reportes de pruebas unitarias y cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reportes-pruebas-unitarias
+          path: |
+            backend/reportes/unitarias.xml
+            backend/reportes/cobertura-dominio.lcov
+          if-no-files-found: ignore
+
+  pruebas-integracion:
+    name: Pruebas de integración
+    needs: construccion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24 (con caché de dependencias npm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # Adaptadores reales (SQLite con sql.js, QR) y la API completa por HTTP, incluidos los 401/403.
+      - name: Pruebas de integración
+        run: npm run test:integracion
+
+      - name: Publicar reporte de pruebas de integración
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reportes-pruebas-integracion
+          path: backend/reportes/integracion.xml
+          if-no-files-found: ignore
+
+  app-movil:
+    name: App móvil (tipos y lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24 (con caché de dependencias npm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # El cliente no se despliega en un servidor (corre en el celular con Expo), pero debe compilar.
+      - name: Revisión de tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx expo lint

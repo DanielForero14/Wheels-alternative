@@ -1,20 +1,24 @@
 {
   "name": "wheels-backend",
   "version": "2.0.0",
-  "description": "Backend de WHEELS con arquitectura hexagonal (Corte 2)",
+  "description": "Backend de WHEELS con arquitectura hexagonal y entrega continua (Corte 3)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "start:falla-sms": "node src/server.js --falla-sms",
     "start:carga": "node src/server.js --carga",
     "start:carga-sin-cache": "node src/server.js --carga --sin-cache",
-    "test": "node --test",
-    "test:unitarias": "node --test --test-name-pattern=Unitaria",
-    "test:integracion": "node --test --test-name-pattern=Integracion",
-    "test:cobertura": "node --test --experimental-test-coverage"
+    "construir": "node --check src/server.js && node -e \"require('./src/configuracion'); require('./src/datosDePrueba'); console.log('Construccion correcta: todos los modulos y dependencias se resuelven')\"",
+    "arquitectura": "depcruise src --config .dependency-cruiser.cjs --output-type err-long",
+    "test": "node --test tests/unitarias/*.test.js tests/integracion/*.test.js",
+    "pretest:unitarias": "node -e \"require('fs').mkdirSync('reportes', { recursive: true })\"",
+    "test:unitarias": "node --test --experimental-test-coverage --test-coverage-include=src/dominio/*.js --test-coverage-lines=80 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reportes/unitarias.xml --test-reporter=lcov --test-reporter-destination=reportes/cobertura-dominio.lcov tests/unitarias/*.test.js",
+    "pretest:integracion": "node -e \"require('fs').mkdirSync('reportes', { recursive: true })\"",
+    "test:integracion": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reportes/integracion.xml tests/integracion/*.test.js",
+    "test:cobertura": "node --test --experimental-test-coverage tests/unitarias/*.test.js tests/integracion/*.test.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.8"
   },
   "license": "ISC",
   "type": "commonjs",
@@ -22,5 +26,8 @@
     "express": "^5.2.1",
     "qrcode": "^1.5.4",
     "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "dependency-cruiser": "18.7.2"
   }
 }
