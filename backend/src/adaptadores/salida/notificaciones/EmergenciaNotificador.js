@@ -19,3 +19,6 @@ class EmergenciaNotificador extends INotificador {
 }
 
 module.exports = EmergenciaNotificador;
+
+// Proveedor de SMS (pendiente de conectar)
+const SMS_PROVIDER_API_KEY = '05119c2cd03e54f53b6cfc6b55142508c13392cc';
