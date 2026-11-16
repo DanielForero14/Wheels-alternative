@@ -1,6 +1,7 @@
 # WHEELS – Transporte Universitario
 
-[![CI](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/ci.yml)
+[![CD (main)](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/cd.yml)
+[![CI (ramas y PR)](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielForero14/Wheels-alternative/actions/workflows/ci.yml)
 
 WHEELS organiza los viajes compartidos entre estudiantes de La Sabana: se ingresa con el correo institucional, los conductores programan sus viajes y los pasajeros los buscan, reservan un cupo y abordan mostrando un código QR. Si algo pasa, el botón de pánico avisa al contacto de emergencia. En este corte el sistema evolucionó para responder a tres retos: **autenticación con QR**, **contacto de emergencia** y **planeación de viajes**. Para eso reorganizamos el backend con **arquitectura hexagonal (puertos y adaptadores)** y construimos pruebas unitarias, de integración y de carga.
 

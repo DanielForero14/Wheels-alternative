@@ -4,9 +4,13 @@ name: CI
 # pruebas unitarias (con el umbral de cobertura del dominio), pruebas de integración y la app móvil.
 # Cada job es un check del Pull Request: si alguno falla, el cambio no se puede fusionar a main.
 #
-# Cuándo corre: en cada push y en cada Pull Request hacia main, y a mano desde la pestaña Actions.
+# Cuándo corre:
+#   - en cada push a cualquier rama distinta de main y en cada Pull Request hacia main;
+#   - en main lo ejecuta cd.yml como primera etapa (workflow_call), antes de publicar y desplegar;
+#   - a mano desde la pestaña Actions (workflow_dispatch).
 on:
   push:
+    branches-ignore: [main]
   pull_request:
     branches: [main]
   workflow_call:
@@ -17,9 +21,10 @@ permissions:
   contents: read
 
 # Si llega un push nuevo a la misma rama, se cancela la ejecución anterior (ahorra minutos).
+# En main no se cancela: ahí el CI es la primera etapa de un despliegue (cd.yml).
 concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:

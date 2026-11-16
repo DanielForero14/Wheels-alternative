@@ -1,6 +1,6 @@
 {
   "name": "wheels-backend",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Backend de WHEELS con arquitectura hexagonal y entrega continua (Corte 3)",
   "main": "src/server.js",
   "scripts": {
