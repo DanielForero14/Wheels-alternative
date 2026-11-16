@@ -52,7 +52,7 @@ Cada amenaza nombra el componente o flujo de WHEELS donde ocurre. Las de autenti
 | A10 | La clave `SECRETO_TOKEN` o una credencial de despliegue queda en el código o en el historial de Git y cualquiera puede firmar tokens válidos | Divulgación de información | F5 → repositorio | `.env` en `.gitignore`; valores reales solo en GitHub Secrets/Environments; Gitleaks sobre todo el historial | Job *Secretos (Gitleaks)* en cada PR; PR bloqueado de demostración (sección 6) |
 | A11 | Una vulnerabilidad en la API permite ejecutar código dentro del contenedor y desde ahí tocar el servidor | Elevación de privilegios | F8 → contenedor `backend` | Usuario `node` (sin root), sistema de archivos de solo lectura salvo el volumen de datos, `cap_drop: ALL`, `no-new-privileges` | `docker compose exec backend whoami` → `node`; escribir fuera de `/app/datos` → *Read-only file system* (verificado a mano y en la prueba de humo) |
 | A12 | Un Pull Request malicioso ejecuta código en el runner autohospedado (la máquina de despliegue) | Elevación de privilegios | F7 → runner | Los PR corren en runners de GitHub; solo los jobs de `main` (tras el merge aprobado) y la reversión manual usan el runner; `main` protegida con revisión obligatoria | Configuración de `cd.yml` (job de despliegue con `if` sobre `main`) y ruleset de `main` |
-| A13 | Un conductor niega haber aceptado a un pasajero, o un pasajero niega haber abordado | Repudio | `ServicioReservas` → SQLite | El estado de cada reserva (pendiente, aceptada, rechazada, usada) queda guardado y cada acción exige el token de quien la hace | Integración del flujo solicitar → aceptar → abordar. **Riesgo aceptado (H-08):** no hay bitácora de auditoría con fecha y autor de cada acción |
+| A13 | Un conductor niega haber aceptado a un pasajero, o un pasajero niega haber abordado | Repudio | `ServicioReservas` → SQLite | El estado de cada reserva (pendiente, aceptada, rechazada, usada) queda guardado y cada acción exige el token de quien la hace. Los textos del usuario se limpian antes de escribirlos en el log, para que nadie pueda falsificar líneas (H-10) | Integración del flujo solicitar → aceptar → abordar. **Riesgo aceptado (H-08):** no hay bitácora de auditoría con fecha y autor de cada acción |
 
 ## 3. Inventario de datos personales
 
@@ -92,7 +92,24 @@ Dependabot (`.github/dependabot.yml`) abre PR semanales de actualización; no re
 | H-07 | Intentos ilimitados para el código de ingreso de 6 dígitos: fuerza bruta (A1) | Revisión del modelo de amenazas | Alta | **Corregido** | Bloqueo al quinto intento fallido, guardado en SQLite. Commit [da284ac](https://github.com/DanielForero14/Wheels-alternative/commit/da284ac) |
 | H-08 | No hay bitácora de auditoría (quién aceptó, canceló o validó, y cuándo) (A13) | Revisión del modelo de amenazas | Baja | **Riesgo aceptado** | El estado final de cada reserva queda guardado y cada acción exige el token de su autor, pero no se registra la historia. **Para corregirlo:** un puerto `IBitacora` con un adaptador que guarde (usuario, acción, recurso, fecha) en una tabla de solo inserción |
 | H-09 | No hay límite de peticiones por cliente (*rate limiting*) en la API (A8) | Revisión del modelo de amenazas | Media | **Riesgo aceptado** | La amenaza más grave que mitiga (fuerza bruta del código, A1) ya está cubierta por el bloqueo de intentos, y el SLO se verifica en cada despliegue. **Para corregirlo:** un *proxy* inverso (por ejemplo Nginx o el balanceador del proveedor) con límite por IP delante de la API |
+| H-10 | Inyección en logs (`js/log-injection`, alertas 1, 2 y 3 de *Code scanning*): `AppNotificador`, `ConsolaNotificador` y `EmergenciaNotificador` escribían en la consola el nombre, el punto de recogida o el contacto sin limpiar; con un salto de línea se podía falsificar una línea del log, por ejemplo un código de ingreso o una alerta (repudio, A13) | SAST (CodeQL) | Media (por debajo del umbral, pero se corrige) | **Corregido** | `textoParaLog` reemplaza saltos de línea y caracteres de control antes de escribir; prueba `tests/integracion/notificadores.test.js`. Commit [82a497e](https://github.com/DanielForero14/Wheels-alternative/commit/82a497e3b599ef17cb058cff4e5b63c17d8b5580) |
+
+**Resultado de los controles en la rama `corte3-seguridad`** (ejecución [43906044087](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43906044087)), revisado en los logs y en *Security → Code scanning*:
+
+| Control | Resultado |
+|---|---|
+| SAST (CodeQL) | 0 hallazgos altos o críticos; 3 medios (H-10), corregidos |
+| SCA (Trivy) | 0 altos o críticos con corrección en `backend/package-lock.json` y `mobile/package-lock.json`; 4 identificadores suprimidos por `.trivyignore` (H-02 y H-03) |
+| Secretos (Gitleaks) | 0 secretos en el historial |
+| Imagen (Trivy) | 0 críticos con corrección en `wheels-backend` (Debian 12.15 y las librerías de Node). El reporte completo, con todas las severidades, queda como artefacto `reporte-imagen` de cada ejecución |
 
 ## 6. Evidencia de que los controles funcionan
 
-*(Se completa con los enlaces a los Pull Requests que introducen un problema a propósito, que el pipeline bloquea y que se cierran sin fusionar.)*
+Dos Pull Requests introducen a propósito un problema de seguridad. El pipeline los bloquea en el control que corresponde (el resto de checks pasa) y se cierran **sin fusionar**:
+
+| PR | Qué introduce | Check que lo bloquea | Ejecución |
+|---|---|---|---|
+| [#4 Demo secreto filtrado](https://github.com/DanielForero14/Wheels-alternative/pull/4) | Una llave falsa del proveedor de SMS (`SMS_PROVIDER_API_KEY`) escrita en `EmergenciaNotificador.js` | **Secretos (Gitleaks)** → `generic-api-key` | [43914558449](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43914558449) |
+| [#5 Demo dependencia vulnerable](https://github.com/DanielForero14/Wheels-alternative/pull/5) | `lodash` 4.17.20 en el backend (CVE-2021-23337, inyección de comandos en `template`, alta, corregida en 4.17.21) | **SCA (dependencias con Trivy)** | [43914772336](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43914772336) |
+
+Durante esta prueba apareció un problema del propio control: Gitleaks, por defecto, revisa **todas** las ramas (`git log --all`), así que la llave de la rama de demostración hacía fallar el control de secretos en cualquier otra rama. Se corrigió para que revise todo el historial del commit que se prueba (`--log-opts=HEAD`), que en un PR incluye el historial de `main` (commit [9ab28fe](https://github.com/DanielForero14/Wheels-alternative/commit/9ab28fefc71a4c94c5f443af290254793f5c626b)). Las ramas de demostración se conservan para que los PR cerrados sigan mostrando su ejecución.
