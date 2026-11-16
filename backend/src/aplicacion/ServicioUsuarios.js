@@ -28,7 +28,13 @@ class ServicioUsuarios {
         if (!codigo) {
             throw new Error('Primero pide un código de ingreso');
         }
-        codigo.validar(codigoEscrito, ahora);
+        try {
+            codigo.validar(codigoEscrito, ahora);
+        } catch (error) {
+            // Se guarda el intento fallido: así el límite de intentos se respeta entre peticiones.
+            this.repositorio.guardarCodigoVerificacion(codigo);
+            throw error;
+        }
 
         const usuario = this.repositorio.buscarUsuario(correoLimpio);
         usuario.verificado = true;

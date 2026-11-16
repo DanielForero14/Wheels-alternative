@@ -191,3 +191,133 @@ jobs:
 
       - name: Lint
         run: npx expo lint
+
+  # ---------------------------------------------------------------------------------------------
+  # DevSecOps: los cuatro controles son quality gates. Umbrales y justificación en
+  # docs/adr/ADR-003-seguridad-del-pipeline.md; hallazgos y decisiones en docs/seguridad.md.
+  # Los scripts de scripts/ son los mismos que se pueden correr a mano (con Docker).
+  # ---------------------------------------------------------------------------------------------
+  sast:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write   # subir los resultados a la pestaña Security > Code scanning
+      actions: read
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      # JavaScript no se compila: CodeQL analiza el backend (Node) y la app (TypeScript) directamente.
+      # security-extended agrega consultas de seguridad más estrictas que el conjunto por defecto.
+      - name: Iniciar CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/node_modules'
+              - 'backend/tests'
+
+      - name: Analizar con CodeQL
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+          output: reportes/codeql
+          upload: ${{ github.event.repository.private && 'never' || 'always' }}
+
+      # CodeQL publica los hallazgos pero no detiene el pipeline: este paso aplica el umbral
+      # (ningún hallazgo con security-severity >= 7.0 sin tratar).
+      - name: Quality gate de SAST (ningún hallazgo alto o crítico sin tratar)
+        run: scripts/umbral-sast.sh reportes/codeql/*.sarif
+
+      - name: Publicar reporte de CodeQL
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-sast
+          path: reportes/codeql/
+          if-no-files-found: ignore
+
+  sca:
+    name: SCA (dependencias con Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Quality gate de SCA (ninguna vulnerabilidad alta o crítica con corrección)
+        run: scripts/sca.sh
+
+      - name: Publicar reporte de dependencias
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-sca
+          path: reportes/trivy-dependencias.json
+          if-no-files-found: ignore
+
+  secretos:
+    name: Secretos (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      # fetch-depth: 0 descarga todo el historial: Gitleaks revisa cada commit, no solo los archivos actuales.
+      - name: Descargar el código con todo el historial
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Quality gate de secretos (cero secretos, incluido el historial)
+        run: scripts/secretos.sh
+
+      - name: Publicar reporte de secretos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-secretos
+          path: reportes/gitleaks.json
+          if-no-files-found: ignore
+
+  imagen:
+    name: Imagen Docker y escaneo (Trivy)
+    needs: construccion
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      # Con las variables de ejemplo, Compose debe poder armar la configuración completa.
+      - name: Validar docker-compose.yml
+        run: docker compose --env-file .env.example config --quiet
+
+      - name: Construir la imagen
+        run: docker build --build-arg VERSION="ci-${GITHUB_SHA::7}" -t wheels-backend:ci backend
+
+      - name: Quality gate de la imagen (ninguna vulnerabilidad crítica con corrección)
+        run: scripts/escaneo-imagen.sh wheels-backend:ci
+
+      - name: Publicar reporte de la imagen
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-imagen
+          path: reportes/trivy-imagen.json
+          if-no-files-found: ignore
