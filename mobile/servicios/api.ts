@@ -26,6 +26,7 @@ export type Usuario = {
   nombre: string;
   rol: Rol;
   verificado: boolean;
+  token: string; // token de sesión que entrega /auth/verificar (Corte 3)
 };
 
 export type Viaje = {
@@ -78,13 +79,26 @@ export type TiempoEstimado = {
   desdeCache: boolean;
 };
 
+// ---------- Sesión ----------
+// El backend identifica al usuario por este token, no por los correos que van en el cuerpo
+// (esos campos se siguen enviando, pero el backend los ignora). Lo pone y lo quita sesion.tsx.
+let tokenSesion: string | null = null;
+
+export function usarToken(token: string | null) {
+  tokenSesion = token;
+}
+
 // ---------- Función base ----------
 async function pedir<T>(ruta: string, metodo = 'GET', cuerpo?: object): Promise<T> {
   let respuesta: Response;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (tokenSesion) {
+    headers.Authorization = `Bearer ${tokenSesion}`;
+  }
   try {
     respuesta = await fetch(`${API_URL}${ruta}`, {
       method: metodo,
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: cuerpo ? JSON.stringify(cuerpo) : undefined,
     });
   } catch {

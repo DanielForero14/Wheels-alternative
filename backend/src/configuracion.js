@@ -14,19 +14,26 @@ const ServicioTiempoEstimado = require('./aplicacion/ServicioTiempoEstimado');
 const RutasOpenStreetMap = require('./adaptadores/salida/rutas/RutasOpenStreetMap');
 const RutasEstimadas = require('./adaptadores/salida/rutas/RutasEstimadas');
 const RutasSimuladasLentas = require('./adaptadores/salida/rutas/RutasSimuladasLentas');
+const crypto = require('crypto');
 const crearApp = require('./adaptadores/entrada/http/crearApp');
+const { crearEmisorTokens } = require('./adaptadores/entrada/http/tokens');
 const { cargarDatosDePrueba } = require('./datosDePrueba');
 
 // rutaBD = null -> base de datos en memoria (se usa en las pruebas)
 // datosDePrueba = true -> carga 500 viajes de ejemplo y simula un servicio de rutas lento (pruebas de carga)
 // rutasPrincipal -> permite cambiar el servicio de rutas (en las pruebas no se usa internet)
 // usarCacheRutas = false -> apaga el caché de rutas para comparar en las pruebas de carga
+// secretoToken -> clave con la que se firman los tokens de sesión (variable SECRETO_TOKEN).
+//                 Si no se da (pruebas), se genera una al azar: los tokens no sobreviven a un reinicio.
+// version -> versión desplegada que responde /salud
 async function armarApp({
     rutaBD = null,
     simularFallaSMS = false,
     datosDePrueba = false,
     rutasPrincipal = null,
     usarCacheRutas = true,
+    secretoToken = crypto.randomBytes(32).toString('hex'),
+    version = 'desarrollo',
 } = {}) {
     const repositorio = await RepositorioSQLite.crear(rutaBD);
     const notificadores = [new ConsolaNotificador(), new AppNotificador()];
@@ -50,7 +57,11 @@ async function armarApp({
         cargarDatosDePrueba(repositorio, servicioViajes);
     }
 
-    return crearApp({ servicioUsuarios, servicioViajes, servicioReservas, servicioEmergencia, servicioTiempoEstimado });
+    return crearApp({
+        servicioUsuarios, servicioViajes, servicioReservas, servicioEmergencia, servicioTiempoEstimado,
+        emisorTokens: crearEmisorTokens(secretoToken),
+        version,
+    });
 }
 
 module.exports = armarApp;

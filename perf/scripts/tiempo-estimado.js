@@ -8,7 +8,7 @@
 // SLO definido antes de ejecutar: p95 <= 500 ms y errores < 1 %.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { API, idsDeViajes, aleatorio } from './datos.js';
+import { API, PASAJERO_PRUEBA, idsDeViajes, aleatorio, sesion } from './datos.js';
 
 // Puntos de salida frecuentes (Portal Norte, Chía, Cajicá, Cota, Suba)
 const PUNTOS_DE_SALIDA = [
@@ -29,13 +29,13 @@ export const options = {
 };
 
 export function setup() {
-    return { ids: idsDeViajes() };
+    return { ids: idsDeViajes(), cabeceras: sesion(PASAJERO_PRUEBA) };
 }
 
 export default function (datos) {
     const punto = aleatorio(PUNTOS_DE_SALIDA);
     const viajeId = aleatorio(datos.ids);
-    const respuesta = http.get(`${API}/viajes/${viajeId}/tiempo-estimado?lat=${punto.lat}&lon=${punto.lon}`);
+    const respuesta = http.get(`${API}/viajes/${viajeId}/tiempo-estimado?lat=${punto.lat}&lon=${punto.lon}`, datos.cabeceras);
     check(respuesta, { 'tiempo calculado': (r) => r.status === 200 && r.json('minutos') > 0 });
     sleep(1);
 }

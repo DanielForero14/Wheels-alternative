@@ -1,18 +1,42 @@
 name: wheels
 
+# Levanta el sistema completo con un solo comando:
+#   cp .env.example .env    (y cambie SECRETO_TOKEN)
+#   docker compose up -d --build --wait
+# La app móvil (Expo) no se conteneriza: corre en el celular y se conecta a esta API.
+
 services:
   backend:
     build: ./backend
-    image: wheels-backend:dev
+    # En desarrollo: imagen construida localmente. En el despliegue: la imagen publicada en GHCR con el SHA.
+    image: ${IMAGEN_BACKEND:-wheels-backend:dev}
     ports:
       - "${PUERTO_BACKEND:-3000}:3000"
     environment:
       PORT: 3000
       RUTA_BD: /app/datos/wheels.db
+      # Obligatoria: sin ella Compose se detiene con este mensaje en vez de arrancar con una clave temporal.
+      SECRETO_TOKEN: ${SECRETO_TOKEN:?Defina SECRETO_TOKEN en el archivo .env (vea .env.example)}
     volumes:
       # La base de datos SQLite sobrevive a "docker compose down"; "down -v" la borra
       - datos-wheels:/app/datos
+    # Listo = /salud responde. Lo usan "docker compose up --wait" y el despliegue del pipeline.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/salud').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
     restart: unless-stopped
+    # Endurecimiento del contenedor: sistema de archivos de solo lectura salvo el volumen de datos,
+    # sin privilegios nuevos y sin capacidades de Linux que la API no necesita.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 volumes:
   datos-wheels:

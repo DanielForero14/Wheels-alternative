@@ -4,7 +4,7 @@
 // SLO definido antes de ejecutar: p95 <= 500 ms y errores < 1 %.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { API, ORIGENES, proximosDias, aleatorio } from './datos.js';
+import { API, ORIGENES, PASAJERO_PRUEBA, proximosDias, aleatorio, sesion } from './datos.js';
 
 export const options = {
     stages: [
@@ -20,13 +20,13 @@ export const options = {
 };
 
 export function setup() {
-    return { dias: proximosDias() };
+    return { dias: proximosDias(), cabeceras: sesion(PASAJERO_PRUEBA) };
 }
 
 export default function (datos) {
     const fecha = aleatorio(datos.dias);
     const origen = aleatorio(ORIGENES);
-    const respuesta = http.get(`${API}/viajes?fecha=${fecha}&origen=${encodeURIComponent(origen)}`);
+    const respuesta = http.get(`${API}/viajes?fecha=${fecha}&origen=${encodeURIComponent(origen)}`, datos.cabeceras);
     check(respuesta, { 'respuesta 200': (r) => r.status === 200 });
     sleep(1);
 }
