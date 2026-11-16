@@ -31,11 +31,18 @@ pedir() { # pedir <metodo> <ruta> [token] [cuerpo] -> imprime "<codigo-http> <cu
   local salida; salida="$(curl "${args[@]}" "$BASE_URL$2")" || falla "no hay conexión con $BASE_URL$2"
   echo "$(tail -n1 <<< "$salida") $(sed '$d' <<< "$salida")"
 }
+# Contenedor del backend del proyecto de Compose (se busca por sus etiquetas: así no hace falta el
+# archivo .env ni SECRETO_TOKEN para leer los logs cuando la prueba se ejecuta a mano en el servidor).
+PROYECTO="${COMPOSE_PROJECT_NAME:-wheels}"
+contenedor() {
+  docker ps -q --filter "label=com.docker.compose.project=$PROYECTO" --filter "label=com.docker.compose.service=backend" | head -1
+}
 ingresar() { # ingresar <correo> <rol> -> imprime el token
   pedir POST /auth/solicitar-codigo "" "{\"nombre\":\"Prueba de humo\",\"correo\":\"$1\",\"rol\":\"$2\"}" > /dev/null
-  local codigo=""
+  local codigo="" id; id="$(contenedor)"
+  [[ -n "$id" ]] || falla "no hay un contenedor backend corriendo en el proyecto de Compose '$PROYECTO'"
   for _ in 1 2 3 4 5; do
-    codigo="$(docker compose logs --no-log-prefix backend 2>/dev/null | grep "\[EMAIL a $1\]" | tail -1 | grep -oE '[0-9]{6}' | tail -1 || true)"
+    codigo="$(docker logs "$id" 2>&1 | grep "\[EMAIL a $1\]" | tail -1 | grep -oE '[0-9]{6}' | tail -1 || true)"
     [[ -n "$codigo" ]] && break
     sleep 1
   done
