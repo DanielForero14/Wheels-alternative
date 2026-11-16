@@ -1,0 +1,34 @@
+# Dependabot mantiene las dependencias al día con Pull Requests semanales.
+# No reemplaza el control de SCA del pipeline: cada PR de Dependabot pasa por el mismo CI.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dependencias-backend:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /mobile
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Expo fija versiones compatibles entre sí; se actualizan juntas con "npx expo install --fix".
+    ignore:
+      - dependency-name: "expo*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
