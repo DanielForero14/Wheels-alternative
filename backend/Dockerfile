@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 
 # Etapa 1: instalar solo las dependencias de producción (las pruebas corren en el pipeline de CI)
-FROM node:24.22.2-bookworm-slim AS dependencias
+FROM node:26.13.1-bookworm-slim AS dependencias
 WORKDIR /src
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
 
 # Etapa 2: imagen final solo con Node, las dependencias y el código
-FROM node:24.22.2-bookworm-slim
+FROM node:26.13.1-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=dependencias --chown=node:node /src/node_modules ./node_modules
