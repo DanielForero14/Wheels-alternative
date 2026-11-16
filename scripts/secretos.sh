@@ -18,7 +18,11 @@ fi
 mkdir -p reportes
 
 # "git" revisa cada commit del historial, no solo los archivos actuales.
+# --log-opts=HEAD: todos los commits alcanzables desde el commit que se prueba (su historial completo,
+# y en un Pull Request también el de main). Sin esto Gitleaks usa "git log --all" y un secreto en
+# OTRA rama (por ejemplo, la del PR de demostración bloqueado) haría fallar el pipeline de todas.
 # -w /repo hace que Gitleaks lea el archivo .gitleaksignore de la raíz del repositorio, si existe.
 docker run --rm -v "$RAIZ:/repo" -w /repo "$GITLEAKS_IMAGEN" git /repo \
+  --log-opts="HEAD" \
   --redact --verbose --exit-code 1 \
   --report-format json --report-path /repo/reportes/gitleaks.json

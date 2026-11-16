@@ -72,7 +72,7 @@ Los cuatro controles corren en cada push y en cada Pull Request (`.github/workfl
 |---|---|---|---|---|
 | Análisis estático (SAST) | CodeQL `javascript-typescript` con `security-extended` | Código del backend y de la app | Ningún hallazgo con *security-severity* ≥ 7.0 (alto o crítico) sin tratar. CodeQL solo reporta: el script lee el SARIF y falla | `scripts/umbral-sast.sh` |
 | Análisis de dependencias (SCA) | Trivy 0.76.0 (`fs`) | `backend/package-lock.json` y `mobile/package-lock.json` | Ninguna vulnerabilidad HIGH o CRITICAL con corrección disponible | `scripts/sca.sh` |
-| Detección de secretos | Gitleaks 8.30.1 | Archivos y **todo el historial** de Git | Cero secretos | `scripts/secretos.sh` |
+| Detección de secretos | Gitleaks 8.30.1 | Archivos y **todo el historial** del código que se integra (todos los commits alcanzables desde el commit probado; en un PR incluye el historial de `main`) | Cero secretos | `scripts/secretos.sh` |
 | Escaneo de la imagen | Trivy 0.76.0 (`image`) | Sistema operativo y librerías dentro de `wheels-backend` | Ninguna vulnerabilidad CRITICAL con corrección disponible | `scripts/escaneo-imagen.sh` |
 
 **Cómo se trata un hallazgo que no se corrige:** se registra en la sección 5 como *falso positivo* o *riesgo aceptado* y solo entonces se agrega su identificador a `.trivyignore` (SCA e imagen) o a `.github/codeql/excepciones-sast.txt` (SAST), con el número del hallazgo como comentario. Una excepción sin registro aquí cuenta como un control desactivado.
