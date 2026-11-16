@@ -1,8 +1,26 @@
-# Estrategia y resultados de pruebas – WHEELS (Corte 2)
+# Estrategia y resultados de pruebas – WHEELS (Cortes 2 y 3)
 
 Las pruebas cumplen dos funciones: comprobar que el sistema funciona y **demostrar que los retos se atienden**. Cada nivel prueba una parte distinta de la arquitectura hexagonal.
 
-Usamos el ejecutor de pruebas que ya trae Node (`node:test` y `node:assert`), así no hay que instalar Jest ni otra librería. Los comandos están en el [README](../README.md#2-cómo-ejecutar-las-pruebas).
+Usamos el ejecutor de pruebas que ya trae Node (`node:test` y `node:assert`), así no hay que instalar Jest ni otra librería. Los comandos están en el [README](../README.md#2-cómo-se-ejecuta-el-pipeline).
+
+## Corte 3: las pruebas en el pipeline
+
+En el Corte 2 las pruebas se ejecutaban a mano. En el Corte 3 corren en cada push y en cada Pull Request ([devops.md](devops.md)) y detienen el pipeline si fallan:
+
+| Nivel | Comando (en `backend/`) | Pruebas | Etapa del pipeline | Detiene el pipeline cuando… |
+|---|---|---|---|---|
+| Unitarias | `npm run test:unitarias` | 126 | Pruebas unitarias y cobertura del dominio | Falla una o la cobertura de líneas de `src/dominio` baja de 80 % |
+| Integración | `npm run test:integracion` | 56 | Pruebas de integración | Falla una |
+| Arquitectura | `npm run arquitectura` | 7 reglas | Reglas de arquitectura | Se viola una regla de dependencias |
+| Humo | `scripts/smoke-test.sh` | 13 pasos | Desplegar y verificar (CD) | Falla un paso del flujo principal contra el entorno desplegado |
+| Carga del SLO | `scripts/slo.sh` (`perf/slo.js`) | 600 peticiones | Desplegar y verificar (CD) | p95 > 500 ms o errores ≥ 1 % |
+
+**Pruebas nuevas del Corte 3** (de 148 a 182): token de sesión (`tokens.test.js`), seguridad por HTTP (401, 403, suplantación, divulgación, elevación de privilegios, fuerza bruta del código, errores sin detalles internos), límite de intentos del código de ingreso, inyección en logs (`notificadores.test.js`) y los casos que quedaron pendientes en el Corte 2 (`Reserva` con estado inexistente o ya aceptada; `ServicioReservas` y `ServicioEmergencia` con un viaje o solicitud que no existe).
+
+**Cobertura (16-11-2026, 182 pruebas):** líneas del dominio con solo las pruebas unitarias (lo que mide el umbral): **97,89 %**. Con todas las pruebas: dominio y aplicación en **100 %** de líneas; proyecto completo **95,78 %** de líneas y 95,45 % de ramas. La diferencia con el 97,04 % del Corte 2 es que ahora el reporte incluye adaptadores que solo se usan contra servicios reales (`RutasOpenStreetMap`) o en las pruebas de carga.
+
+Las secciones siguientes son las del Corte 2 y se conservan como referencia.
 
 ---
 

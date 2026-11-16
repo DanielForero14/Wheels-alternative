@@ -1,4 +1,4 @@
-# Documento de Arquitectura – WHEELS (Corte 2)
+# Documento de Arquitectura – WHEELS (Cortes 2 y 3)
 
 ---
 
@@ -238,6 +238,17 @@ La app (Expo / React Native) es el cliente de la API. Aplica la misma idea de se
 | Validar QR: cámara o código escrito | Conductor | 1 |
 | Emergencia: contacto y botón de pánico (envía la ubicación) | Todos | 2 |
 
+### 4.5 Corte 3: la misma arquitectura, verificada, segura y desplegada
+
+En el Corte 3 la arquitectura hexagonal **no cambió de estilo** (no hizo falta un ADR de arquitectura nuevo). Lo que se agregó:
+
+- **Autenticación y autorización** sin romper el estilo: el token de sesión vive en el adaptador de entrada (`adaptadores/entrada/http/tokens.js`), porque es un detalle del transporte HTTP; las reglas de quién puede hacer qué (solo el conductor del viaje lo cancela o valida el QR) viven en los casos de uso con `dominio/ErrorDeAutorizacion.js`, y el adaptador HTTP las traduce a 403. Detalle en [seguridad.md](seguridad.md).
+- **Funciones de aptitud:** las reglas de la sección 4.2 ("las flechas apuntan hacia el núcleo") se comprueban en cada cambio con dependency-cruiser (`backend/.dependency-cruiser.cjs`) y detienen el pipeline si se violan ([devops.md](devops.md)).
+- **Vista de despliegue:** dónde corre cada contenedor y cómo se comunican, en [diagramas/c4-despliegue.md](diagramas/c4-despliegue.md), con la decisión en el [ADR-002](adr/ADR-002-estrategia-de-despliegue.md).
+- **Seguridad del pipeline:** [ADR-003](adr/ADR-003-seguridad-del-pipeline.md).
+
+El recorrido completo por los tres cortes está en [evolucion.md](evolucion.md).
+
 ---
 
 ## 5. Estrategia de pruebas
@@ -256,14 +267,16 @@ Ver [pruebas.md](pruebas.md#resultados).
 
 ## 7. Límites conocidos y trabajo pendiente
 
-- **Autenticación de usuarios:** el ingreso es con correo institucional y código, sin contraseña. La app guarda la sesión en memoria (al cerrarla hay que volver a ingresar) y el backend no usa tokens de sesión: confía en el correo que envía la app. Agregar tokens (por ejemplo JWT) sería el siguiente paso.
+> Esta sección es la del Corte 2. Cómo se resolvió cada pendiente en el Corte 3, y los límites del sistema final, están en [evolucion.md](evolucion.md#6-pendientes-del-corte-2-y-cómo-se-resolvieron).
+
+- **Autenticación de usuarios** *(resuelto en el Corte 3: token de sesión firmado)*: el ingreso es con correo institucional y código, sin contraseña. La app guarda la sesión en memoria (al cerrarla hay que volver a ingresar) y el backend no usa tokens de sesión: confía en el correo que envía la app. Agregar tokens (por ejemplo JWT) sería el siguiente paso.
 - **Correo simulado:** el código de verificación se "envía" por consola. Conectar un servicio real de correo sería un adaptador nuevo del puerto `INotificador`.
 - **Mensajería real:** los canales de notificación y de emergencia se simulan en consola. Conectar un proveedor real de SMS o correo sería un adaptador nuevo.
 - **Base de datos:** SQLite (con sql.js) guarda todo el archivo en cada escritura. Sirve para un solo servidor y poco volumen de escrituras. Si el sistema creciera habría que pasar a una BD de servidor (por ejemplo PostgreSQL); gracias al puerto `IRepositorioViajes` sería solo un adaptador nuevo.
 - **Tiempo estimado sin tráfico:** OpenStreetMap calcula la ruta por las calles pero no conoce el tráfico en vivo. El respaldo (`RutasEstimadas`) es aún más aproximado: línea recta × 1,3 a 30 km/h, y solo reconoce lugares conocidos de la zona. Un proveedor con tráfico (Google) sería otro adaptador del mismo puerto.
 - **Servidores públicos de OpenStreetMap:** tienen límite de uso (Nominatim pide máximo una consulta por segundo). El caché reduce las consultas, pero para producción habría que usar un servidor propio o uno pago.
 - **Sin tolerancia a caídas del servidor:** si el backend se cae, se cae todo, incluidas las alertas. Lo aceptamos en el ADR porque ningún reto lo exige.
-- **Para el Corte 3:** automatizar estas pruebas en un pipeline de CI/CD.
+- **Para el Corte 3:** automatizar estas pruebas en un pipeline de CI/CD *(resuelto: `ci.yml` y `cd.yml`)*.
 - **Propuestas para el Corte 3:**
   - Ubicación del conductor en tiempo real para que el pasajero vea qué tan cerca está.
   - Autocompletar direcciones mientras se escriben.
