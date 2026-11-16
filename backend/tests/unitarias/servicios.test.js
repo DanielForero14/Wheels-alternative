@@ -480,6 +480,15 @@ describe('Unitaria - ServicioEmergencia (contacto de emergencia y botón de pán
         assert.strictEqual(correo.notificar.mock.callCount(), 0);
     });
 
+    // Pendiente declarado en pruebas.md del Corte 2.
+    test('una alerta con un viaje que no existe lanza error y no se envía', () => {
+        const sms = notificadorEspia('SMS');
+        const { servicio } = preparar([sms]);
+
+        assert.throws(() => servicio.activarAlerta(PASAJERA, 999), /Viaje no encontrado/);
+        assert.strictEqual(sms.notificar.mock.callCount(), 0);
+    });
+
     test('si el primer canal falla, la alerta sale por el de respaldo', () => {
         const sms = canalQueFalla('SMS');
         const correo = notificadorEspia('Correo');

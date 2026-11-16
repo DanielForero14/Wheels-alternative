@@ -16,7 +16,10 @@ function calcularUrlApi(): string {
   return `http://${ip}:3000`;
 }
 
-export const API_URL = calcularUrlApi();
+// En producción la API corre en otro puerto u otra máquina (por ejemplo http://192.168.1.20:8091):
+// se indica con la variable de Expo EXPO_PUBLIC_API_URL al arrancar la app. Sin ella se usa el puerto 3000
+// del mismo computador que sirve la app (desarrollo). Ver docs/implementacion.md.
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || calcularUrlApi();
 
 // ---------- Tipos de datos que devuelve el backend ----------
 export type Rol = 'pasajero' | 'conductor';
