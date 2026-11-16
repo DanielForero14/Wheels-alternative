@@ -1,0 +1,59 @@
+name: Prueba de carga larga
+
+# Prueba larga del SLO contra el entorno desplegado. No corre en cada push (tarda varios minutos):
+# se lanza a mano desde la pestaña Actions. Usa los mismos umbrales que la prueba corta del CD (perf/slo.js).
+on:
+  workflow_dispatch:
+    inputs:
+      duracion:
+        description: 'Duración de la prueba (formato de k6: 2m, 5m, 10m)'
+        default: '5m'
+        required: true
+        type: string
+      tasa:
+        description: 'Búsquedas por segundo'
+        default: '60'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: despliegue-wheels
+  cancel-in-progress: false
+
+jobs:
+  carga:
+    name: Prueba de carga larga del SLO
+    if: vars.DESPLIEGUE == 'activo'
+    runs-on: [self-hosted, linux, wheels]
+    timeout-minutes: 30
+    environment:
+      name: produccion
+      url: ${{ vars.APP_URL }}
+    env:
+      SECRETO_TOKEN: ${{ secrets.SECRETO_TOKEN }}
+      COMPOSE_PROJECT_NAME: wheels-produccion
+      PUERTO_BACKEND: ${{ vars.PUERTO_BACKEND || '8091' }}
+      SLO_DURACION: ${{ inputs.duracion }}
+      SLO_TASA: ${{ inputs.tasa }}
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Validar los parámetros
+        run: |
+          [[ "$SLO_DURACION" =~ ^[0-9]+[smh]$ ]] || { echo "Duración no válida: $SLO_DURACION" >&2; exit 1; }
+          [[ "$SLO_TASA" =~ ^[0-9]+$ ]] || { echo "Tasa no válida: $SLO_TASA" >&2; exit 1; }
+
+      - name: Prueba de carga del SLO (k6)
+        run: scripts/slo.sh
+
+      - name: Publicar reporte
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-carga-larga
+          path: reportes/slo.txt
+          if-no-files-found: ignore

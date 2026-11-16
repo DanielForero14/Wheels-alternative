@@ -38,5 +38,19 @@ services:
     cap_drop:
       - ALL
 
+  # Prueba de carga corta con los umbrales del SLO (perf/slo.js). Se ejecuta con scripts/slo.sh;
+  # no arranca con "docker compose up" (perfil "pruebas").
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: ["pruebas"]
+    volumes:
+      - ./perf:/perf:ro
+    environment:
+      API: http://backend:3000
+      SECRETO_TOKEN: ${SECRETO_TOKEN:?Defina SECRETO_TOKEN en el archivo .env (vea .env.example)}
+      DURACION: ${SLO_DURACION:-30s}
+      TASA: ${SLO_TASA:-20}
+    command: ["run", "/perf/slo.js"]
+
 volumes:
   datos-wheels:
