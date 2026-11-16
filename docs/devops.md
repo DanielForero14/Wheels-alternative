@@ -110,7 +110,9 @@ COMPOSE_PROJECT_NAME=wheels-produccion PUERTO_BACKEND=8091 SECRETO_TOKEN=<valor-
 | Prueba | Dónde | Resultado |
 |---|---|---|
 | Despliegue de dos versiones y reversión con `scripts/rollback.sh` en local (proyecto de Compose separado) | Máquina del equipo, 16-11-2026 | La versión 2 se desplegó; la reversión volvió a la 1 y la prueba de humo pasó |
-| Reversión manual desde GitHub Actions | *Se registra aquí el enlace a la ejecución cuando el pipeline de CD corra en `main`* | — |
+| Despliegue de la versión `v3.0.0` (tag) | [CD #3 – ejecución 43980134699](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43980134699), 16-11-2026 | Imagen publicada como `3.0.0` y `sha-fbcb898`, desplegada, prueba de humo y SLO en verde; `/salud` → `3.0.0` |
+| **Reversión manual** desde GitHub Actions a la versión anterior (`sha-33ab958`, el commit del PR #7) | [CD #4 – ejecución 43980687138](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43980687138), 16-11-2026, runner `wheels-wsl` | Job *Reversión manual* en verde: validó el tag, desplegó esa imagen y pasó la prueba de humo; `/salud` → `3.0.0+sha.33ab958` |
+| Vuelta a la versión actual con el mismo mecanismo (tag `3.0.0`) | [CD #5 – ejecución 43980845470](https://github.com/DanielForero14/Wheels-alternative/actions/runs/43980845470), 16-11-2026 | Job *Reversión manual* en verde; `/salud` → `3.0.0` |
 
 ## 7. Ejecutar las verificaciones a mano
 
