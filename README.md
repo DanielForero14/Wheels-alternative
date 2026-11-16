@@ -61,6 +61,8 @@ npx expo start
 
 ### Endpoints de la API
 
+**Autenticación (Corte 3):** `POST /auth/verificar` devuelve un `token`. Todas las rutas, salvo `/`, `/salud` y `/auth/*`, exigen la cabecera `Authorization: Bearer <token>` (401 si falta o no es válido). El usuario que actúa sale siempre del token: los campos `conductorId`, `pasajeroId` y `usuarioId` del cuerpo se ignoran. Las rutas `/usuarios/:correo/...` solo las puede usar el dueño de ese correo, y solo el conductor del viaje puede cancelarlo, responder sus solicitudes o validar el QR (403 en otro caso). `GET /salud` responde `{ "estado": "ok", "version": "..." }` y lo usan Docker y el pipeline.
+
 | Método y ruta | Qué hace | Reto |
 |---|---|---|
 | `POST /auth/solicitar-codigo` | Envía un código al correo institucional (`nombre, correo, rol`) | 1 |
@@ -95,26 +97,29 @@ npm run test:integracion   # solo integración
 npm run test:cobertura     # todas, con el reporte de cobertura
 ```
 
-**Pruebas de carga (k6).** En una terminal se arranca la API con datos de ejemplo y en otra se ejecuta el script:
+**Pruebas de carga (k6).** En una terminal se arranca la API con datos de ejemplo y en otra se ejecuta el script. Desde el Corte 3 la API exige un token de sesión, así que k6 firma su propio token con **la misma** `SECRETO_TOKEN` que usa la API:
 
 ```bash
+# En las dos terminales (Git Bash), la misma clave:
+export SECRETO_TOKEN=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")   # solo en la Terminal 1; copie el valor a la Terminal 2
+
 # Terminal 1
 cd backend
 npm run start:carga
 
 # Terminal 2 (desde la raíz del repositorio)
-k6 run --summary-export perf/resultados/busqueda-baseline.json perf/scripts/busqueda-baseline.js
-k6 run --summary-export perf/resultados/busqueda-carga.json    perf/scripts/busqueda-carga.js
-k6 run --summary-export perf/resultados/emergencia-pico.json   perf/scripts/emergencia-pico.js
+k6 run -e SECRETO_TOKEN=$SECRETO_TOKEN --summary-export perf/resultados/busqueda-baseline.json perf/scripts/busqueda-baseline.js
+k6 run -e SECRETO_TOKEN=$SECRETO_TOKEN --summary-export perf/resultados/busqueda-carga.json    perf/scripts/busqueda-carga.js
+k6 run -e SECRETO_TOKEN=$SECRETO_TOKEN --summary-export perf/resultados/emergencia-pico.json   perf/scripts/emergencia-pico.js
 ```
 
 **Caché del tiempo estimado (Reto 3).** Se corre el mismo script dos veces, cambiando cómo arranca la API:
 
 ```bash
 # 1) Sin caché: Terminal 1 -> npm run start:carga-sin-cache
-k6 run --summary-export perf/resultados/tiempo-estimado-sin-cache.json perf/scripts/tiempo-estimado.js
+k6 run -e SECRETO_TOKEN=$SECRETO_TOKEN --summary-export perf/resultados/tiempo-estimado-sin-cache.json perf/scripts/tiempo-estimado.js
 # 2) Con caché: Terminal 1 -> npm run start:carga
-k6 run --summary-export perf/resultados/tiempo-estimado-con-cache.json perf/scripts/tiempo-estimado.js
+k6 run -e SECRETO_TOKEN=$SECRETO_TOKEN --summary-export perf/resultados/tiempo-estimado-con-cache.json perf/scripts/tiempo-estimado.js
 ```
 
 Reinicia la API (Terminal 1) antes de cada script para que empiece con la base de datos vacía.

@@ -6,7 +6,7 @@
 // (ninguna alerta puede quedarse sin enviar).
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { API, JSON_HEADERS, idsDeViajes, aleatorio } from './datos.js';
+import { API, idsDeViajes, aleatorio, sesion } from './datos.js';
 
 const USUARIOS = 100;
 
@@ -27,14 +27,15 @@ export function setup() {
     const datos = { ids: idsDeViajes() };
     for (let i = 1; i <= USUARIOS; i++) {
         const contacto = { nombre: `Contacto ${i}`, telefono: '3001234567' };
-        http.put(`${API}/usuarios/usuario${i}@unisabana.edu.co/contacto-emergencia`, JSON.stringify(contacto), JSON_HEADERS);
+        http.put(`${API}/usuarios/usuario${i}@unisabana.edu.co/contacto-emergencia`, JSON.stringify(contacto), sesion(`usuario${i}@unisabana.edu.co`));
     }
     return datos;
 }
 
 export default function (datos) {
-    const alerta = { usuarioId: `usuario${__VU}@unisabana.edu.co`, viajeId: aleatorio(datos.ids) };
-    const respuesta = http.post(`${API}/emergencias`, JSON.stringify(alerta), JSON_HEADERS);
+    // El usuario que activa la alerta sale del token (cada usuario virtual es un estudiante distinto).
+    const alerta = { viajeId: aleatorio(datos.ids) };
+    const respuesta = http.post(`${API}/emergencias`, JSON.stringify(alerta), sesion(`usuario${__VU}@unisabana.edu.co`));
     check(respuesta, { 'alerta enviada': (r) => r.status === 200 && r.json('enviada') === true });
     sleep(1);
 }

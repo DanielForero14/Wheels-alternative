@@ -8,6 +8,7 @@ const assert = require('node:assert');
 const RepositorioMemoria = require('../../src/adaptadores/salida/persistencia/RepositorioMemoria');
 const Usuario = require('../../src/dominio/Usuario');
 const Vehiculo = require('../../src/dominio/Vehiculo');
+const ErrorDeAutorizacion = require('../../src/dominio/ErrorDeAutorizacion');
 const ServicioUsuarios = require('../../src/aplicacion/ServicioUsuarios');
 const ServicioViajes = require('../../src/aplicacion/ServicioViajes');
 const ServicioReservas = require('../../src/aplicacion/ServicioReservas');
@@ -198,7 +199,7 @@ describe('Unitaria - ServicioViajes', () => {
         const { viajes } = crearServicios(repoConUsuarios(), [espia]);
         const viaje = viajes.programarViaje(datosViaje(), HOY);
 
-        viajes.cancelarViaje(viaje.id);
+        viajes.cancelarViaje(viaje.id, CONDUCTOR);
 
         assert.strictEqual(viaje.estado, 'cancelado');
         assert.strictEqual(espia.notificar.mock.callCount(), 1);
@@ -207,7 +208,15 @@ describe('Unitaria - ServicioViajes', () => {
 
     test('cancelar un viaje que no existe lanza error', () => {
         const { viajes } = crearServicios(repoConUsuarios());
-        assert.throws(() => viajes.cancelarViaje(99), /Viaje no encontrado/);
+        assert.throws(() => viajes.cancelarViaje(99, CONDUCTOR), /Viaje no encontrado/);
+    });
+
+    test('otro conductor no puede cancelar el viaje (error de autorización)', () => {
+        const { viajes } = crearServicios(repoConUsuarios());
+        const viaje = viajes.programarViaje(datosViaje(), HOY);
+
+        assert.throws(() => viajes.cancelarViaje(viaje.id, 'otro@unisabana.edu.co'), ErrorDeAutorizacion);
+        assert.strictEqual(viaje.estado, 'disponible');
     });
 });
 
@@ -277,7 +286,18 @@ describe('Unitaria - ServicioReservas (solicitud, aceptación y QR)', () => {
     test('solo el conductor del viaje puede responder la solicitud', async () => {
         const { viaje, servicio } = preparar();
         const solicitud = servicio.solicitarCupo(viaje.id, PASAJERA, PUNTO);
-        await assert.rejects(servicio.responderSolicitud(solicitud.id, 'otro@unisabana.edu.co', true), /Solo el conductor/);
+        await assert.rejects(servicio.responderSolicitud(solicitud.id, 'otro@unisabana.edu.co', true), ErrorDeAutorizacion);
+    });
+
+    test('responder una solicitud que no existe lanza error', async () => {
+        const { servicio } = preparar();
+        await assert.rejects(servicio.responderSolicitud(999, CONDUCTOR, true), /Solicitud no encontrada/);
+    });
+
+    test('solicitar cupo en un viaje que no existe o sin pasajero lanza error', () => {
+        const { servicio } = preparar();
+        assert.throws(() => servicio.solicitarCupo(999, PASAJERA, PUNTO), /Viaje no encontrado/);
+        assert.throws(() => servicio.solicitarCupo(999, undefined, PUNTO), /Falta el pasajero/);
     });
 
     test('una solicitud ya respondida no se puede responder otra vez', async () => {
@@ -362,14 +382,14 @@ describe('Unitaria - ServicioReservas (solicitud, aceptación y QR)', () => {
         const { viaje, servicio } = preparar();
         const { reserva } = await solicitarYAceptar(servicio, viaje);
 
-        const resultado = servicio.validarAbordaje(viaje.id, reserva.codigo, 0);
+        const resultado = servicio.validarAbordaje(viaje.id, reserva.codigo, CONDUCTOR, 0);
 
         assert.strictEqual(resultado.usada, true);
     });
 
     test('un código inventado se rechaza', () => {
         const { viaje, servicio } = preparar();
-        assert.throws(() => servicio.validarAbordaje(viaje.id, 'codigo-falso', 0), /Código inválido/);
+        assert.throws(() => servicio.validarAbordaje(viaje.id, 'codigo-falso', CONDUCTOR, 0), /Código inválido/);
     });
 
     test('un código de otro viaje se rechaza', async () => {
@@ -377,15 +397,15 @@ describe('Unitaria - ServicioReservas (solicitud, aceptación y QR)', () => {
         const otroViaje = viajes.programarViaje(datosViaje(), HOY);
         const { reserva } = await solicitarYAceptar(servicio, viaje);
 
-        assert.throws(() => servicio.validarAbordaje(otroViaje.id, reserva.codigo, 0), /no pertenece a este viaje/);
+        assert.throws(() => servicio.validarAbordaje(otroViaje.id, reserva.codigo, CONDUCTOR, 0), /no pertenece a este viaje/);
     });
 
     test('un código ya usado se rechaza la segunda vez', async () => {
         const { viaje, servicio } = preparar();
         const { reserva } = await solicitarYAceptar(servicio, viaje);
-        servicio.validarAbordaje(viaje.id, reserva.codigo, 0);
+        servicio.validarAbordaje(viaje.id, reserva.codigo, CONDUCTOR, 0);
 
-        assert.throws(() => servicio.validarAbordaje(viaje.id, reserva.codigo, 0), /ya fue usado/);
+        assert.throws(() => servicio.validarAbordaje(viaje.id, reserva.codigo, CONDUCTOR, 0), /ya fue usado/);
     });
 
     test('un código vencido se rechaza', async () => {
@@ -393,7 +413,20 @@ describe('Unitaria - ServicioReservas (solicitud, aceptación y QR)', () => {
         const { reserva } = await solicitarYAceptar(servicio, viaje);
         const despuesDelViaje = reserva.expira + 1;
 
-        assert.throws(() => servicio.validarAbordaje(viaje.id, reserva.codigo, despuesDelViaje), /vencido/);
+        assert.throws(() => servicio.validarAbordaje(viaje.id, reserva.codigo, CONDUCTOR, despuesDelViaje), /vencido/);
+    });
+
+    test('solo el conductor del viaje puede validar el abordaje', async () => {
+        const { viaje, servicio } = preparar();
+        const { reserva } = await solicitarYAceptar(servicio, viaje);
+
+        assert.throws(() => servicio.validarAbordaje(viaje.id, reserva.codigo, PASAJERA, 0), ErrorDeAutorizacion);
+        assert.strictEqual(reserva.usada, false); // el intento no gasta el código
+    });
+
+    test('validar el abordaje de un viaje que no existe lanza error', () => {
+        const { servicio } = preparar();
+        assert.throws(() => servicio.validarAbordaje(999, 'cualquiera', CONDUCTOR, 0), /Viaje no encontrado/);
     });
 });
 

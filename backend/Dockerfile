@@ -22,8 +22,12 @@ ENV RUTA_BD=/app/datos/wheels.db
 USER node
 EXPOSE 3000
 
-# La ruta "/" responde sin depender de servicios externos. La imagen slim no trae curl: se usa fetch de Node
+# Versión que responde /salud; el pipeline la pasa al construir (por ejemplo 3.0.0 o sha-1a2b3c4).
+ARG VERSION=desarrollo
+ENV VERSION_APP=${VERSION}
+
+# /salud responde sin depender de servicios externos. La imagen slim no trae curl: se usa fetch de Node
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
-  CMD node -e "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+  CMD node -e "fetch('http://localhost:3000/salud').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 CMD ["node", "src/server.js"]

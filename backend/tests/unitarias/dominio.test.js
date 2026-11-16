@@ -9,6 +9,7 @@ const ContactoEmergencia = require('../../src/dominio/ContactoEmergencia');
 const Usuario = require('../../src/dominio/Usuario');
 const CodigoVerificacion = require('../../src/dominio/CodigoVerificacion');
 const Vehiculo = require('../../src/dominio/Vehiculo');
+const ErrorDeAutorizacion = require('../../src/dominio/ErrorDeAutorizacion');
 
 const HOY = '2026-10-01';
 const datosValidos = () => ({
@@ -157,6 +158,27 @@ describe('Unitaria - Reserva (código QR)', () => {
         const reserva = new Reserva(1, 1, 'p1', 'abc', EXPIRA);
         reserva.marcarAbordaje(0);
         assert.throws(() => reserva.marcarAbordaje(0), /ya fue usado/);
+    });
+
+    // Pendientes declarados en pruebas.md del Corte 2.
+    test('no se puede crear una reserva con un estado que no existe', () => {
+        assert.throws(() => new Reserva(1, 1, 'p1', null, null, false, 'confirmada'), /Estado de reserva no válido/);
+    });
+
+    test('una solicitud ya aceptada no se puede aceptar otra vez', () => {
+        const reserva = Reserva.solicitar(1, 'p1', 'Portería principal');
+        reserva.aceptar('abc', EXPIRA);
+        assert.throws(() => reserva.aceptar('otro', EXPIRA), /ya fue respondida/);
+        assert.strictEqual(reserva.codigo, 'abc');
+    });
+});
+
+describe('Unitaria - ErrorDeAutorizacion', () => {
+    test('es un Error con su propio nombre, para que el adaptador HTTP responda 403', () => {
+        const error = new ErrorDeAutorizacion('no te corresponde');
+        assert.ok(error instanceof Error);
+        assert.strictEqual(error.name, 'ErrorDeAutorizacion');
+        assert.strictEqual(error.message, 'no te corresponde');
     });
 });
 

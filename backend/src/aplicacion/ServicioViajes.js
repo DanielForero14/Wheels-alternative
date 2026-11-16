@@ -4,6 +4,7 @@
 // usa el puerto IRepositorioViajes. Sigue siendo el "Subject" del Observer.
 const ViajeFactory = require('../dominio/ViajeFactory');
 const Vehiculo = require('../dominio/Vehiculo');
+const ErrorDeAutorizacion = require('../dominio/ErrorDeAutorizacion');
 
 class ServicioViajes {
     constructor(repositorio, servicioUsuarios, notificadores = []) {
@@ -48,10 +49,14 @@ class ServicioViajes {
         return this.repositorio.buscarViajesDeConductor(conductorId);
     }
 
-    cancelarViaje(viajeId) {
+    // Solo el conductor que programó el viaje puede cancelarlo.
+    cancelarViaje(viajeId, conductorId) {
         const viaje = this.repositorio.buscarViajePorId(viajeId);
         if (!viaje) {
             throw new Error('Viaje no encontrado');
+        }
+        if (viaje.conductorId !== conductorId) {
+            throw new ErrorDeAutorizacion('Solo el conductor del viaje puede cancelarlo');
         }
         viaje.cancelar();
         this.repositorio.actualizarViaje(viaje);

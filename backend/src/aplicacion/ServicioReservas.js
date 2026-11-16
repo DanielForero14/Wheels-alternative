@@ -2,6 +2,7 @@
 // Casos de uso de reservas (Reto 1): el pasajero solicita un cupo con su punto de recogida,
 // el conductor acepta o rechaza, y el QR del pasajero aceptado se valida al abordar.
 const Reserva = require('../dominio/Reserva');
+const ErrorDeAutorizacion = require('../dominio/ErrorDeAutorizacion');
 
 class ServicioReservas {
     constructor(repositorio, generadorCodigo, servicioUsuarios, notificadores = []) {
@@ -42,7 +43,7 @@ class ServicioReservas {
         }
         const viaje = this.repositorio.buscarViajePorId(reserva.viajeId);
         if (viaje.conductorId !== conductorId) {
-            throw new Error('Solo el conductor del viaje puede responder la solicitud');
+            throw new ErrorDeAutorizacion('Solo el conductor del viaje puede responder la solicitud');
         }
 
         if (!aceptar) {
@@ -94,7 +95,15 @@ class ServicioReservas {
     }
 
     // El conductor escanea el QR y envía el código que trae dentro.
-    validarAbordaje(viajeId, codigo, ahora = Date.now()) {
+    // Solo el conductor del viaje puede validar quién se sube a su carro.
+    validarAbordaje(viajeId, codigo, conductorId, ahora = Date.now()) {
+        const viaje = this.repositorio.buscarViajePorId(viajeId);
+        if (!viaje) {
+            throw new Error('Viaje no encontrado');
+        }
+        if (viaje.conductorId !== conductorId) {
+            throw new ErrorDeAutorizacion('Solo el conductor del viaje puede validar el abordaje');
+        }
         const reserva = this.repositorio.buscarReservaPorCodigo(codigo);
         if (!reserva) {
             throw new Error('Código inválido');
