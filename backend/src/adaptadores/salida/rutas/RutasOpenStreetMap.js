@@ -5,20 +5,28 @@
 const IServicioRutas = require('../../../puertos/IServicioRutas');
 
 const TIEMPO_MAXIMO_MS = 4000; // si el servicio no responde en 4 s, se usa el respaldo
+const ZONA_SERVICIO = { oeste: -74.25, norte: 5.15, este: -73.85, sur: 4.68 };
 
 class RutasOpenStreetMap extends IServicioRutas {
     async buscarCoordenadas(direccion) {
-        const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=co&q=' +
-            encodeURIComponent(direccion);
+        const { oeste, norte, este, sur } = ZONA_SERVICIO;
+        const parametros = new URLSearchParams({
+            format: 'json', limit: '1', countrycodes: 'co',
+            viewbox: [oeste, norte, este, sur].join(','), bounded: '1', q: direccion,
+        });
+        const url = `https://nominatim.openstreetmap.org/search?${parametros}`;
         const respuesta = await fetch(url, {
             headers: { 'User-Agent': 'WHEELS-proyecto-universitario/1.0' }, // Nominatim lo exige
             signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
         });
         const resultados = await respuesta.json();
-        if (!respuesta.ok || resultados.length === 0) {
+        const lugar = Array.isArray(resultados) ? resultados[0] : undefined;
+        const lat = Number(lugar?.lat);
+        const lon = Number(lugar?.lon);
+        if (!respuesta.ok || !(lat >= sur && lat <= norte && lon >= oeste && lon <= este)) {
             throw new Error(`No se encontró la dirección "${direccion}"`);
         }
-        return { lat: Number(resultados[0].lat), lon: Number(resultados[0].lon) };
+        return { lat, lon };
     }
 
     async calcularRuta(origen, destino) {

@@ -103,6 +103,32 @@ describe('Unitaria - ServicioTiempoEstimado (Reto 3: tiempo hasta el destino)', 
         assert.strictEqual(resultado.minutos, 30);
     });
 
+    test('la dirección expira a las 24 horas y las consultas simultáneas comparten su renovación', async () => {
+        const principal = rutasFalsas('OpenStreetMap');
+        const { viaje, servicio } = preparar(principal);
+        const unDia = 24 * 60 * 60 * 1000;
+
+        await servicio.calcularParaViaje(viaje.id, UBICACION, 0);
+        await servicio.calcularParaViaje(viaje.id, UBICACION, unDia - 1);
+        assert.strictEqual(principal.buscarCoordenadas.mock.callCount(), 1);
+
+        await Promise.all([
+            servicio.calcularParaViaje(viaje.id, UBICACION, unDia),
+            servicio.calcularParaViaje(viaje.id, UBICACION, unDia),
+        ]);
+        assert.strictEqual(principal.buscarCoordenadas.mock.callCount(), 2);
+    });
+
+    test('una búsqueda de dirección fallida se vuelve a intentar', async () => {
+        const principal = rutasFalsas('OpenStreetMap');
+        principal.buscarCoordenadas.mock.mockImplementationOnce(async () => { throw new Error('sin internet'); });
+        const { viaje, servicio } = preparar(principal, rutasCaidas('Respaldo'));
+
+        await assert.rejects(servicio.calcularParaViaje(viaje.id, UBICACION, 0), /sin internet/);
+        await servicio.calcularParaViaje(viaje.id, UBICACION, 1);
+        assert.strictEqual(principal.buscarCoordenadas.mock.callCount(), 2);
+    });
+
     test('con el caché apagado siempre consulta el servicio', async () => {
         const principal = rutasFalsas('OpenStreetMap');
         const { viaje, servicio } = preparar(principal, undefined, { usarCache: false });

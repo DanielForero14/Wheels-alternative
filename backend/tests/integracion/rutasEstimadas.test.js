@@ -1,5 +1,5 @@
 // Prueba de integración: puerto IServicioRutas + adaptador de respaldo RutasEstimadas.
-// (El adaptador de OpenStreetMap necesita internet; se prueba a mano con la app.)
+// El adaptador de OpenStreetMap se verifica en rutasOpenStreetMap.test.js.
 const { describe, test } = require('node:test');
 const assert = require('node:assert');
 const RutasEstimadas = require('../../src/adaptadores/salida/rutas/RutasEstimadas');
