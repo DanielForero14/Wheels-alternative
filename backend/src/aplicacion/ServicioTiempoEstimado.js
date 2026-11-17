@@ -1,10 +1,10 @@
 // aplicacion/ServicioTiempoEstimado.js
 // Reto 3: cuánto se demora el usuario desde donde está hasta el destino del viaje.
 // Decisiones de arquitectura:
-// - Rendimiento: CACHÉ. Las rutas ya calculadas se guardan unos minutos y las
-//   direcciones ya ubicadas no se vuelven a buscar.
+// - Rendimiento: CACHÉ. Las rutas se guardan cinco minutos y las direcciones, 24 horas.
 // - Disponibilidad: RESPALDO. Si el servicio externo falla, se usa el cálculo estimado.
 const MINUTOS_EN_CACHE = 5;
+const TTL_DIRECCIONES_MS = 24 * 60 * 60 * 1000;
 
 class ServicioTiempoEstimado {
     constructor(repositorio, rutasPrincipal, rutasRespaldo, { usarCache = true } = {}) {
@@ -12,7 +12,7 @@ class ServicioTiempoEstimado {
         this.repositorio = repositorio;       // IRepositorioViajes
         this.rutasPrincipal = rutasPrincipal; // IServicioRutas (ej. OpenStreetMap)
         this.rutasRespaldo = rutasRespaldo;   // IServicioRutas (cálculo estimado)
-        this.cacheDirecciones = new Map();    // "universidad de la sabana" -> promesa de { lat, lon }
+        this.cacheDirecciones = new Map();    // dirección normalizada -> { promesa, guardadoEn }
         this.cacheRutas = new Map();          // "4.755,-74.046,4.862,-74.033" -> { promesa, guardadoEn }
     }
 
@@ -27,7 +27,7 @@ class ServicioTiempoEstimado {
             throw new Error('Viaje no encontrado');
         }
 
-        const destino = await this._coordenadasDe(viaje.puntoFinal);
+        const destino = await this._coordenadasDe(viaje.puntoFinal, ahora);
         const { ruta, fuente, desdeCache } = await this._rutaEntre({ lat, lon }, destino, ahora);
 
         return {
@@ -40,17 +40,23 @@ class ServicioTiempoEstimado {
         };
     }
 
-    async _coordenadasDe(direccion) {
+    async _coordenadasDe(direccion, ahora) {
         const clave = direccion.trim().toLowerCase();
-        if (!this.usarCache || !this.cacheDirecciones.has(clave)) {
-            // Se guarda la promesa: si llegan muchas consultas iguales al mismo tiempo,
-            // todas esperan la misma respuesta en vez de llamar al servicio muchas veces.
-            const promesa = this._conRespaldo(servicio => servicio.buscarCoordenadas(direccion))
-                .then(({ resultado }) => resultado);
-            this.cacheDirecciones.set(clave, promesa);
-            promesa.catch(() => this.cacheDirecciones.delete(clave)); // un error no se guarda
+        const guardada = this.cacheDirecciones.get(clave);
+        if (this.usarCache && guardada && ahora - guardada.guardadoEn < TTL_DIRECCIONES_MS) {
+            return guardada.promesa;
         }
-        return this.cacheDirecciones.get(clave);
+        const promesa = this._conRespaldo(servicio => servicio.buscarCoordenadas(direccion))
+            .then(({ resultado }) => resultado);
+        if (this.usarCache) {
+            // Las consultas simultáneas comparten la promesa, incluso tras expirar la anterior.
+            const entrada = { promesa, guardadoEn: ahora };
+            this.cacheDirecciones.set(clave, entrada);
+            promesa.catch(() => {
+                if (this.cacheDirecciones.get(clave) === entrada) this.cacheDirecciones.delete(clave);
+            });
+        }
+        return promesa;
     }
 
     async _rutaEntre(origen, destino, ahora) {
