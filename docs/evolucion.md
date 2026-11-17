@@ -67,7 +67,23 @@ Los pendientes salen de la sección 7 de `arquitectura.md` y de la sección de c
 | "Sin tolerancia a caídas del servidor" | **Mitigado parcialmente:** `restart: unless-stopped`, healthcheck y reversión automática; sigue habiendo una sola instancia | ADR-002 |
 | Propuestas del Corte 2: ubicación del conductor en tiempo real, autocompletar direcciones, SMS real | **No se implementaron**: el enunciado del Corte 3 no pide funcionalidades de negocio nuevas. Siguen como trabajo futuro | — |
 
-> **Retroalimentación del profesor sobre el Corte 2:** *(el equipo agrega aquí los comentarios recibidos y cómo se atendió cada uno).*
+### Retroalimentación del profesor sobre el Corte 2
+
+| Comentario | Cómo se atendió en el Corte 3 | Evidencia |
+|---|---|---|
+| Los módulos de dominio y aplicación estaban desacoplados de Express, sql.js y la infraestructura. | Se conservó la arquitectura hexagonal. CI comprueba las direcciones de las dependencias con dependency-cruiser. | [ADR-001](adr/ADR-001-arquitectura-hexagonal.md) y [CI](../.github/workflows/ci.yml). |
+| Las pruebas incluían casos límite y reloj inyectado. Las 148 pruebas del Corte 2 pasaban. | Se mantuvieron esas verificaciones y se ampliaron a 182 pruebas del backend. CI exige además al menos 80 % de cobertura de líneas del dominio. | [Backend](../backend/package.json) y [etapas de CI](devops.md#3-etapas-umbrales-y-por-qué). |
+| La comparación de carga con y sin caché mostraba el efecto de una decisión arquitectónica. | Se conservó el experimento del Corte 2 con el proveedor lento simulado. En el Corte 3, CD evalúa el SLO de búsqueda sobre el entorno desplegado. El A/B mide latencia y deja abierta la validación de la exactitud de las rutas. | [Pruebas del Corte 2](pruebas.md) y [umbrales de CD](devops.md#3-etapas-umbrales-y-por-qué). |
+| El Corte 2 quedó en la rama corte2. Al abrir el repositorio se seguía viendo el primer corte. | Se integró la base del Corte 2 y los cambios del Corte 3 a main mediante pull requests. | [PR de la base #1](https://github.com/DanielForero14/Wheels-alternative/pull/1) y [PR de documentación #8](https://github.com/DanielForero14/Wheels-alternative/pull/8). |
+| La API exponía las reservas y el QR al conocer el correo, y el abordaje no verificaba quién conducía el viaje. Esto comprometía el Reto 1. | Las rutas protegidas exigen un token firmado. La consulta de reservas verifica que el correo de la URL coincida con el de la sesión. Solo el conductor del viaje puede validar el abordaje. Las pruebas cubren el rechazo sin sesión y el acceso de otro usuario. | [PR de autenticación #2](https://github.com/DanielForero14/Wheels-alternative/pull/2), [pruebas HTTP](../backend/tests/integracion/api.test.js) y [modelo de amenazas](seguridad.md). |
+| Nominatim interpretó «Universidad» como un barrio de Pereira. La caché de direcciones nunca vencía y el adaptador de OpenStreetMap carecía de pruebas automatizadas directas. | Queda abierto. El adaptador toma el primer resultado en Colombia. La caché de rutas dura cinco minutos y la de direcciones exitosas vive durante el proceso. Las pruebas usan dobles y el respaldo local. Para cerrar el pendiente se requiere acotar la búsqueda a la zona de servicio, definir la expiración de direcciones y probar el adaptador con respuestas controladas. | [Adaptador de mapas](../backend/src/adaptadores/salida/rutas/RutasOpenStreetMap.js), [servicio de estimación](../backend/src/aplicacion/ServicioTiempoEstimado.js) y [pruebas del respaldo](../backend/tests/integracion/rutasEstimadas.test.js). |
+| Las distancias y los tiempos incorrectos se mencionaron en la exposición y faltó registrarlos como límite. | El límite queda explícito en la sección 7. Las cifras se presentan como estimaciones sujetas a la dirección resuelta, el proveedor y la ausencia de tráfico en vivo. | [Límites conocidos](#7-límites-conocidos-del-sistema-final). |
+
+### Retroalimentación de los compañeros
+
+Los compañeros destacaron los ejemplos hablados, la demostración en vivo, las pruebas k6 con usuarios virtuales, la utilidad para estudiantes y la cobertura de los tres retos. Para la exposición del Corte 3, se propone abrir con el problema y el recorrido de un estudiante, vincular cada reto con su decisión de arquitectura y su prueba, y recorrer la demo en un orden fijo. Las distancias y los tiempos quedan documentados como estimaciones. La claridad de las etiquetas y de los datos de la interfaz queda como mejora de usabilidad.
+
+La coevaluación de la presentación y el registro de participación individual se gestionan con el profesor.
 
 ## 7. Límites conocidos del sistema final
 
@@ -76,6 +92,7 @@ Los pendientes salen de la sección 7 de `arquitectura.md` y de la sección de c
 - **Mensajería simulada:** el código de ingreso, los avisos y las alertas se escriben en la consola. Para producción hace falta un adaptador de correo y uno de SMS reales (ver `implementacion.md`).
 - **Riesgos de seguridad aceptados:** dependencias de la app móvil que solo se corrigen migrando de versión de Expo (H-02, H-03), sin bitácora de auditoría (H-08) y sin límite de peticiones por cliente (H-09). El token dura 12 horas y no se puede revocar antes, salvo cambiando `SECRETO_TOKEN`.
 - **OpenStreetMap público:** limita las peticiones (1 por segundo); el caché lo amortigua, pero para producción hace falta un servidor propio o un proveedor pago.
+- **Exactitud de distancias y tiempos:** una dirección ambigua puede resolverse fuera de la zona esperada. Las coordenadas exitosas no expiran mientras corre el proceso, el adaptador de OpenStreetMap carece de pruebas automatizadas directas y la duración de OSRM no incluye tráfico en vivo. La precisión de estas estimaciones requiere validación adicional.
 - **El SLO solo mide la búsqueda** en el pipeline. El tiempo estimado se midió en el Corte 2 con un servicio simulado, porque medirlo en producción golpearía los servidores públicos de OpenStreetMap.
 - **La app móvil** se distribuye con Expo Go en modo desarrollo; no hay compilación para las tiendas.
 
