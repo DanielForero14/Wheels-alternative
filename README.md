@@ -222,5 +222,5 @@ Es la tabla del Corte 2 con dos columnas nuevas: la **etapa del pipeline** que v
 | Integrante | Rol / contribución |
 |---|---|
 | Gabriel Armando González Sosa | Diseño UML y desarrollo de la app móvil (Expo/React Native) |
-| Laura Sofía Rodriguez Gonzalez | Implementación del backend (Express), patrones de diseño y principios SOLID |
-| Daniel Felipe Forero Sánchez | Documentación |
+| Laura Sofía Rodriguez Gonzalez | Documentación |
+| Daniel Felipe Forero Sánchez | Implementación del backend (Express), patrones de diseño y principios SOLID |
